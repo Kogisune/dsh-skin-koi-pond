@@ -62,7 +62,6 @@
 
 ```bash
 dsh plugin --profile web add github:Kogisune/dsh-skin-koi-pond
-# 或本地路径: dsh plugin --profile web add D:/path/to/dsh-skin-koi-pond
 # 重启 dsh web 生效；卸载即复原
 ```
 
