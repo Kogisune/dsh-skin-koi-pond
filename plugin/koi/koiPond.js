@@ -313,8 +313,8 @@ const KoiPond = (() => {
     ctx.ellipse(x, y, size / 2, size / 2, 0, 0, Math.PI * 2)
     ctx.fill()
   }
-  // 影子：深色池水下用柔和白色（原博客版为灰色，深色底不可见）
-  const SHADOW_FILL = 'rgba(255,255,255,0.055)'
+  // 影子：深色投影（水下自然投影感），替代原博客版的灰色与之前试用的白色
+  const SHADOW_FILL = 'rgba(0,0,0,0.28)'
   function drawShadow(k) {
     for (let i = 0; i < k.body.length; i++) {
       const b = k.body[i]
@@ -364,7 +364,7 @@ const KoiPond = (() => {
     ctx.stroke()
   }
 
-  // 荷叶影子（深色底用柔和白）
+  // 荷叶影子（深色投影）
   function drawLeafShadow(lf) {
     if (!ctx) return
     const verts = leafVerts(lf)
@@ -372,7 +372,7 @@ const KoiPond = (() => {
     ctx.save()
     ctx.translate(lf.x, lf.y)
     ctx.globalAlpha = curAlpha
-    ctx.fillStyle = 'rgba(255,255,255,0.04)'
+    ctx.fillStyle = 'rgba(0,0,0,0.22)'
     ctx.beginPath()
     ctx.moveTo(verts[0].x + sh, verts[0].y + sh)
     for (let v = 1; v < verts.length; v++) ctx.lineTo(verts[v].x + sh, verts[v].y + sh)

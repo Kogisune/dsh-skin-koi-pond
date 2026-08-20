@@ -74,7 +74,7 @@ body[data-dsh-koi-pond] #koi-pond-dsh #koi-pond-scrim {
   inset: 0;
   pointer-events: none;
   background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(2px);
   -webkit-backdrop-filter: blur(3px);
 }
 
@@ -82,7 +82,7 @@ body[data-dsh-koi-pond] #koi-pond-dsh #koi-pond-scrim {
 body[data-dsh-koi-pond] #koi-pond-dsh {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   overflow: hidden;
 }

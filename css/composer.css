@@ -42,7 +42,7 @@ body[data-dsh-koi-pond] [data-composer-card] [class*='modes'] button[class*='tri
   color: var(--koi-ink-2);
   background: var(--koi-bg-3);
   border: 1px solid var(--koi-border-2);
-  border-radius: 50%;
+  /* border-radius: 50%; */
   box-shadow: inset 0 0 0 1px #ffffff0a;
 }
 body[data-dsh-koi-pond] [data-composer-card] button[class*='add']:hover,
