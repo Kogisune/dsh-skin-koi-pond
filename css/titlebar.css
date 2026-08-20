@@ -1,0 +1,44 @@
+/* ============================================================
+   koi-pond · titlebar.css — 顶栏部件
+   一线水痕分隔 + 水光微透
+   ============================================================ */
+
+body[data-dsh-koi-pond] header[class*='header'] {
+  border-bottom: 1px solid var(--koi-border-1);
+  background: linear-gradient(180deg, #0a100e66 0%, transparent 100%);
+  backdrop-filter: blur(10px) saturate(0.9);
+}
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) header[class*='header'] {
+  background: linear-gradient(180deg, #fffdf459 0%, transparent 100%);
+}
+
+body[data-dsh-koi-pond] header[class*='header'] :is(nav, span, button, a, div) {
+  color: var(--koi-ink-2);
+}
+body[data-dsh-koi-pond] header[class*='header'] button:hover {
+  color: var(--koi-accent);
+}
+
+/* Tab：选中 = 锦鲤橙下划线 */
+body[data-dsh-koi-pond] :is([data-pane='conversation'], [class*='centerCol'])
+  button[class*='tabActive'] {
+  color: var(--koi-ink-1);
+  border-bottom-color: var(--koi-accent);
+}
+body[data-dsh-koi-pond] :is([data-pane='conversation'], [class*='centerCol'])
+  button[class*='tab']:hover {
+  color: var(--koi-ink-1);
+}
+
+/* 顶栏计数/元信息弱化 */
+body[data-dsh-koi-pond] header[class*='header'] :is([class*='counter'], [class*='caption'], [class*='meta']) {
+  color: var(--koi-ink-4);
+}
+
+/* 聚焦环 */
+body[data-dsh-koi-pond] header[class*='header'] :is(button, [role='tab']):focus-visible {
+  outline-offset: 2px;
+  border-radius: 4px;
+  outline: 1px solid var(--koi-accent);
+  box-shadow: 0 0 0 2px #f26a3c2e;
+}

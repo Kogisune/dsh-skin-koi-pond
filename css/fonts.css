@@ -1,0 +1,43 @@
+/* ============================================================
+   koi-pond · fonts.css — 字体部件
+   中文优先的系统字体栈 + 标题衬线点缀（纸墨感）
+   ============================================================ */
+
+body[data-dsh-koi-pond] {
+  --koi-font-ui: 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei UI',
+    'Microsoft YaHei', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+  --koi-font-serif: 'Songti SC', 'Noto Serif SC', 'STSong', 'SimSun', Georgia, serif;
+  --koi-font-mono: 'Cascadia Code', 'JetBrains Mono', 'Sarasa Mono SC',
+    Consolas, 'Courier New', monospace;
+
+  font-family: var(--koi-font-ui);
+}
+
+/* 标题/品牌处用衬线，纸墨感 */
+body[data-dsh-koi-pond] [class*='headline'],
+body[data-dsh-koi-pond] [class*='logoRow'] button[class*='brand'],
+body[data-dsh-koi-pond] [class*='sectionHeader'] {
+  font-family: var(--koi-font-serif);
+}
+
+/* 代码块 */
+body[data-dsh-koi-pond] code,
+body[data-dsh-koi-pond] pre,
+body[data-dsh-koi-pond] [data-terminal] {
+  font-family: var(--koi-font-mono);
+}
+
+/* 输入区 */
+body[data-dsh-koi-pond] [data-composer-card] textarea,
+body[data-dsh-koi-pond] [class*='searchInput'],
+body[data-dsh-koi-pond] input,
+body[data-dsh-koi-pond] textarea {
+  font-family: var(--koi-font-ui);
+}
+
+/* 行高/字距微调，阅读更舒展 */
+body[data-dsh-koi-pond] [data-chat-flow] [class*='markdown'],
+body[data-dsh-koi-pond] [data-chat-flow-kind] [class*='markdown'] {
+  line-height: 1.75;
+  letter-spacing: 0.01em;
+}

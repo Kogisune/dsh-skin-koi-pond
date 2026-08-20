@@ -1,0 +1,91 @@
+/* ============================================================
+   koi-pond · composer.css — 输入区部件
+   水光玻璃卡片 + 锦鲤描边 + 橙红主按钮
+   ============================================================ */
+
+body[data-dsh-koi-pond] [data-composer-card] {
+  --dsw-alias-bg-base: transparent;
+  background:
+    linear-gradient(180deg, #ffffff14 0%, transparent 40%),
+    var(--koi-glass);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 22px;
+  box-shadow: var(--koi-shadow), inset 0 1px #ffffff14;
+  backdrop-filter: blur(14px) saturate(0.92);
+  min-height: 0;
+  overflow: visible;
+}
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) [data-composer-card] {
+  background:
+    linear-gradient(180deg, #ffffff73 0%, transparent 40%),
+    var(--koi-glass);
+  box-shadow: var(--koi-shadow), inset 0 1px #ffffffb8;
+}
+
+/* 聚焦态：锦鲤橙描边 */
+body[data-dsh-koi-pond] [data-composer-card]:focus-within {
+  border-color: var(--koi-accent);
+  box-shadow: var(--koi-shadow), 0 0 0 2px #f26a3c21, inset 0 1px #ffffff14;
+}
+
+body[data-dsh-koi-pond] [data-composer-card] textarea {
+  caret-color: var(--koi-accent);
+}
+body[data-dsh-koi-pond] [data-composer-card] textarea::placeholder {
+  color: var(--koi-ink-4);
+  opacity: 1;
+}
+
+/* 输入区圆形工具按钮 */
+body[data-dsh-koi-pond] [data-composer-card] button[class*='add'],
+body[data-dsh-koi-pond] [data-composer-card] [class*='modes'] button[class*='trigger']:has([class*='triggerIcon']) {
+  color: var(--koi-ink-2);
+  background: var(--koi-bg-3);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px #ffffff0a;
+}
+body[data-dsh-koi-pond] [data-composer-card] button[class*='add']:hover,
+body[data-dsh-koi-pond] [data-composer-card] [class*='modes'] button[class*='trigger']:hover {
+  color: var(--koi-accent);
+  border-color: var(--koi-border-3);
+  transform: translateY(-1px);
+}
+
+/* 主发送按钮：锦鲤橙红 */
+body[data-dsh-koi-pond] [data-composer-card] button[class*='primary'] {
+  color: #fff6ef;
+  background: linear-gradient(135deg, var(--koi-accent-hi) 0%, var(--koi-accent) 60%, #d94a24 100%);
+  border: 0;
+  border-radius: 50%;
+  box-shadow: 0 4px 12px #f26a3c3d, inset 0 1px #ffffff2e;
+  transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+body[data-dsh-koi-pond] [data-composer-card] button[class*='primary']:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px #f26a3c52, inset 0 1px #ffffff2e;
+}
+body[data-dsh-koi-pond] [data-composer-card] button[class*='primary']:disabled {
+  opacity: 0.55;
+}
+
+/* 输入区底部 dock 工具条 */
+body[data-dsh-koi-pond] [data-slot='conversation.composer.dock'] > * {
+  color: var(--koi-ink-3);
+  background: linear-gradient(90deg, transparent, #3fae7a0d 10% 90%, transparent);
+}
+body[data-dsh-koi-pond] [data-slot='conversation.composer.dock'] > * [class*='sep'] {
+  color: var(--koi-ink-4);
+}
+
+/* 模式/模型选择按钮 */
+body[data-dsh-koi-pond] [data-composer-card] [class*='trailing'] button[aria-haspopup='menu'] {
+  color: var(--koi-ink-2);
+  background: transparent;
+  border-radius: 9px;
+}
+body[data-dsh-koi-pond] [data-composer-card] [class*='trailing'] button[aria-haspopup='menu']:hover {
+  color: var(--koi-accent);
+  background: #3fae7a0f;
+}

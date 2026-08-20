@@ -1,0 +1,42 @@
+{
+  "name": "dsh-skin-koi-pond",
+  "description": "锦鲤池塘 — Koi Pond theme for the DeepSeek Harness web GUI (dsh-theme-manager compatible, component-split CSS)",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./skin.json": "./skin.json",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "inject": [],
+      "platform": "web"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node scripts/validate.mjs"
+  },
+  "keywords": ["dsh", "dsh-plugin", "theme", "skin", "koi", "pond"],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "cordis.patch.yml",
+    "skin.json",
+    "css",
+    "preview",
+    "README.md",
+    "LICENSE"
+  ]
+}

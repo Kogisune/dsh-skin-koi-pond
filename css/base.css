@@ -1,0 +1,194 @@
+/* ============================================================
+   koi-pond · base.css — 共享基础（任何部件都加载）
+   设计令牌：锦鲤池塘意象
+   深色 = 池塘夜色（墨青池水 / 月光文字 / 锦鲤橙红）
+   浅色 = 宣纸日色（米白宣纸 / 墨色文字 / 朱红锦鲤）
+   作用域：body[data-dsh-koi-pond]
+   ============================================================ */
+
+/* ---------- 深色 · 池塘夜色（默认） ---------- */
+body[data-dsh-koi-pond] {
+  color: #e6f0e9;
+
+  /* 自有令牌：锦鲤池塘色板 */
+  --koi-bg-0: #0a100e;          /* 池底墨青（页面最深处） */
+  --koi-bg-1: #0e1815;          /* 中层池水 */
+  --koi-bg-2: #13221c;          /* 池面（侧栏/卡片） */
+  --koi-bg-3: #182a22;          /* 抬升层 */
+  --koi-bg-4: #1e3329;          /* hover 层 */
+  --koi-ink-1: #e6f0e9;         /* 月光白（主文字） */
+  --koi-ink-2: #a9c4b4;         /* 次级文字 */
+  --koi-ink-3: #7c9a89;         /* 三级文字 */
+  --koi-ink-4: #5c7a6a;         /* 弱化文字 */
+  --koi-accent: #f26a3c;        /* 锦鲤橙红（主强调） */
+  --koi-accent-hi: #ff8a5c;     /* 锦鲤亮橙 */
+  --koi-gold: #d9a441;          /* 金鳞 */
+  --koi-lotus: #3fae7a;         /* 荷叶绿 */
+  --koi-water: #4fb8c9;         /* 水光蓝 */
+  --koi-border-1: #22392e;
+  --koi-border-2: #2c4638;
+  --koi-border-3: #3d5c4a;
+  --koi-glass: #0e1815b8;       /* 水光玻璃 */
+  --koi-shadow: 0 18px 48px #00000059, 0 2px 8px #0000003d;
+
+  /* 覆盖 DSH 官方设计令牌（dsw-alias） */
+  --dsw-alias-bg-base: transparent;
+  --dsw-alias-bg-layer-1: #0e1815e6;
+  --dsw-alias-bg-layer-2: #13221ceb;
+  --dsw-alias-bg-layer-3: #182a22f0;
+  --dsw-alias-bg-overlay: #0a100ef7;
+  --dsw-alias-border-l1: #2c463833;
+  --dsw-alias-border-l2-darkmode-thin: #3d5c4a40;
+  --dsw-alias-border-l2: #3d5c4a4d;
+  --dsw-alias-border-l3: #f26a3ca3;
+  --dsw-alias-brand-primary: #f26a3c;
+  --dsw-alias-brand-text: #ffe7dc;
+  --dsw-alias-button-elevated-fill: #182a22f0;
+  --dsw-alias-button-floating-fill: #13221cf5;
+  --dsw-alias-button-floating-hover: #1e3329;
+  --dsw-alias-button-info-fill: #3fae7a;
+  --dsw-alias-button-info-hover: #4fc08a;
+  --dsw-alias-interactive-bg-active: #f26a3c3d;
+  --dsw-alias-interactive-bg-hover: #3fae7a24;
+  --dsw-alias-interactive-bg-hover-solid: #1e3329;
+  --dsw-alias-label-primary: #e6f0e9;
+  --dsw-alias-label-primary-bluish: #cde0d3;
+  --dsw-alias-label-secondary: #a9c4b4;
+  --dsw-alias-label-tertiary: #7c9a89;
+  --dsw-alias-label-caption: #64806f;
+  --dsw-alias-label-dimmed: #4d6657;
+  --dsw-alias-state-business-primary: #f26a3c;
+  --dsw-alias-state-business-tertiary: #2c4638;
+  --dsw-alias-state-warn-tertiary: #d9a44133;
+  --dsw-alias-state-warn-label: #e5b860;
+  --dsw-alias-state-danger-tertiary: #f26a3c2e;
+  --dsw-alias-state-danger-label: #ff8a5c;
+  --dsw-alias-markdown-code-block: #0e1815f7;
+  --dsw-specific-input-major: #13221ce0;
+  --dsw-specific-selector: #182a22e6;
+  --dsw-specific-sidebar-fill: #0b1410e6;
+  --dsw-specific-sidebar-nav-item-active-accent: #f26a3c42;
+  --dsw-shadow-lv1: 0 2px 10px #00000033;
+  --dsw-shadow-lv2: var(--koi-shadow);
+
+  background-color: var(--koi-bg-0);
+}
+
+/* ---------- 浅色 · 宣纸日色 ---------- */
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) {
+  color: #1c2b24;
+
+  --koi-bg-0: #f5f3ea;
+  --koi-bg-1: #efece0;
+  --koi-bg-2: #e8e4d4;
+  --koi-bg-3: #faf8f0;
+  --koi-bg-4: #f0ecdc;
+  --koi-ink-1: #1c2b24;
+  --koi-ink-2: #46594e;
+  --koi-ink-3: #6d8075;
+  --koi-ink-4: #93a39a;
+  --koi-accent: #d9562f;
+  --koi-accent-hi: #e86a40;
+  --koi-gold: #b8860b;
+  --koi-lotus: #2e8b57;
+  --koi-water: #2a9db4;
+  --koi-border-1: #ddd8c4;
+  --koi-border-2: #cfc9b2;
+  --koi-border-3: #b8b09a;
+  --koi-glass: #faf8f0c7;
+  --koi-shadow: 0 14px 36px #5c4a2e24, 0 2px 8px #5c4a2e1a;
+
+  --dsw-alias-bg-base: transparent;
+  --dsw-alias-bg-layer-1: #efece0e6;
+  --dsw-alias-bg-layer-2: #e8e4d4eb;
+  --dsw-alias-bg-layer-3: #faf8f0f0;
+  --dsw-alias-bg-overlay: #f5f3eafa;
+  --dsw-alias-border-l1: #b8b09a33;
+  --dsw-alias-border-l2-darkmode-thin: #b8b09a40;
+  --dsw-alias-border-l2: #b8b09a4d;
+  --dsw-alias-border-l3: #d9562fa3;
+  --dsw-alias-brand-primary: #d9562f;
+  --dsw-alias-brand-text: #5c2415;
+  --dsw-alias-button-elevated-fill: #faf8f0f0;
+  --dsw-alias-button-floating-fill: #faf8f0f5;
+  --dsw-alias-button-floating-hover: #f0ecdc;
+  --dsw-alias-button-info-fill: #2e8b57;
+  --dsw-alias-button-info-hover: #37a067;
+  --dsw-alias-interactive-bg-active: #d9562f3d;
+  --dsw-alias-interactive-bg-hover: #2e8b571f;
+  --dsw-alias-interactive-bg-hover-solid: #f0ecdc;
+  --dsw-alias-label-primary: #1c2b24;
+  --dsw-alias-label-primary-bluish: #2c3d33;
+  --dsw-alias-label-secondary: #46594e;
+  --dsw-alias-label-tertiary: #6d8075;
+  --dsw-alias-label-caption: #93a39a;
+  --dsw-alias-label-dimmed: #a8b5ad;
+  --dsw-alias-state-business-primary: #d9562f;
+  --dsw-alias-state-business-tertiary: #e8e4d4;
+  --dsw-alias-state-warn-tertiary: #b8860b24;
+  --dsw-alias-state-warn-label: #8a6508;
+  --dsw-alias-state-danger-tertiary: #d9562f24;
+  --dsw-alias-state-danger-label: #c2451f;
+  --dsw-alias-markdown-code-block: #efece0f7;
+  --dsw-specific-input-major: #faf8f0e0;
+  --dsw-specific-selector: #f0ecdce6;
+  --dsw-specific-sidebar-fill: #e8e4d4e6;
+  --dsw-specific-sidebar-nav-item-active-accent: #d9562f38;
+  --dsw-shadow-lv1: 0 2px 8px #5c4a2e1a;
+  --dsw-shadow-lv2: var(--koi-shadow);
+
+  background-color: var(--koi-bg-0);
+}
+
+/* ---------- 全局基础 ---------- */
+body[data-dsh-koi-pond] [id='root'] {
+  background: transparent;
+  position: relative;
+}
+
+body[data-dsh-koi-pond] ::selection {
+  background: var(--koi-accent);
+  color: #fff;
+}
+
+body[data-dsh-koi-pond] :focus-visible {
+  outline-color: var(--koi-accent);
+}
+
+/* 滚动条：池水青 */
+body[data-dsh-koi-pond] *::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+body[data-dsh-koi-pond] *::-webkit-scrollbar-thumb {
+  background: var(--koi-border-2);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+body[data-dsh-koi-pond] *::-webkit-scrollbar-thumb:hover {
+  background: var(--koi-border-3);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+body[data-dsh-koi-pond] *::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 主题切换过渡：仅颜色，避免闪烁 */
+body[data-dsh-koi-pond] * {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.18s;
+  transition-timing-function: ease;
+}
+body[data-dsh-koi-pond] [data-skin-chrome],
+body[data-dsh-koi-pond] [data-koi-ripple],
+body[data-dsh-koi-pond] [data-koi-koi] {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  body[data-dsh-koi-pond] * {
+    transition: none;
+    animation: none;
+  }
+}

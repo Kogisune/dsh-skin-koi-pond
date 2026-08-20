@@ -1,0 +1,143 @@
+/* ============================================================
+   koi-pond · ui.css — 通用 UI 部件
+   消息气泡 / 代码块 / 状态色 / 通用按钮
+   ============================================================ */
+
+/* ---------- 对话消息 ---------- */
+
+/* 用户气泡：宣纸底 + 锦鲤描边 */
+body[data-dsh-koi-pond] [class*='userRow'] [class*='bubble'] {
+  background: var(--koi-bg-3);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 14px 14px 4px 14px;
+  box-shadow: 0 4px 14px #0000001a;
+  color: var(--koi-ink-1);
+}
+
+/* 助手消息卡：池水玻璃 */
+body[data-dsh-koi-pond] [data-chat-flow-kind='assistant-step'] > * > * > * > div[class*='markdown'] {
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #ffffff0d 0%, transparent 42%), var(--koi-glass);
+  border: 1px solid var(--koi-border-1);
+  border-radius: 14px 14px 14px 4px;
+  align-self: flex-start;
+  width: fit-content;
+  max-width: min(680px, 96%);
+  padding: 14px 18px;
+  box-shadow: 0 4px 14px #0000001f;
+  color: var(--koi-ink-1);
+}
+body[data-dsh-koi-pond]:not([data-ds-dark-theme])
+  [data-chat-flow-kind='assistant-step'] > * > * > * > div[class*='markdown'] {
+  background: linear-gradient(180deg, #ffffff73 0%, transparent 42%), var(--koi-glass);
+  border-color: var(--koi-border-2);
+}
+
+/* 思考块：荷叶绿微光 */
+body[data-dsh-koi-pond] [data-variant='think'] > [data-open='true'] > [data-disclosure-row='true'] {
+  background: #3fae7a14;
+  border: 1px solid #3fae7a2e;
+  border-radius: 9px;
+  color: var(--koi-ink-2);
+}
+body[data-dsh-koi-pond] [data-variant='think'][data-state='running'] [class*='row']:after {
+  background: linear-gradient(90deg, transparent, #f26a3c40 46%, #3fae7a33 62%, transparent);
+  width: 220px;
+  height: 2px;
+  border-radius: 2px;
+  left: -220px;
+  animation: koi-think-sweep 2.6s ease-in-out infinite;
+}
+@keyframes koi-think-sweep {
+  0% { opacity: 0; transform: translateX(0); }
+  14% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(calc(100vw + 440px)); }
+}
+
+/* bash/工具块 */
+body[data-dsh-koi-pond] [data-variant='bash'] {
+  background: var(--koi-bg-1);
+  border: 1px solid var(--koi-border-1);
+  border-radius: 9px;
+  color: var(--koi-ink-2);
+}
+body[data-dsh-koi-pond] [data-terminal] {
+  color: var(--koi-ink-1);
+}
+
+/* ---------- 代码块 ---------- */
+body[data-dsh-koi-pond] [class*='markdown'] pre,
+body[data-dsh-koi-pond] [class*='markdown'] code {
+  background: var(--koi-bg-1);
+  border: 1px solid var(--koi-border-1);
+  border-radius: 8px;
+  color: var(--koi-ink-1);
+}
+
+/* ---------- 行内状态点（运行中 = 金鳞微光） ---------- */
+body[data-dsh-koi-pond] [data-state='running'] :is([class*='runState'], [class*='stateDot']) {
+  filter: drop-shadow(0 0 6px #d9a441b3);
+  color: var(--koi-gold);
+}
+
+/* ---------- 通用按钮（非 composer） ---------- */
+body[data-dsh-koi-pond] button {
+  border-radius: 8px;
+}
+body[data-dsh-koi-pond] button:not([class*='primary']):not([class*='newSession']):hover {
+  color: var(--koi-accent);
+  background: #3fae7a14;
+}
+
+/* ---------- 链接：锦鲤橙，去下划线改描边感 ---------- */
+body[data-dsh-koi-pond] a {
+  color: var(--koi-accent);
+  text-decoration: none;
+  border-bottom: 1px solid #f26a3c3d;
+  transition: border-color 0.15s, color 0.15s;
+}
+body[data-dsh-koi-pond] a:hover {
+  color: var(--koi-accent-hi);
+  border-bottom-color: var(--koi-accent);
+}
+
+/* ---------- 分隔线 ---------- */
+body[data-dsh-koi-pond] hr,
+body[data-dsh-koi-pond] [class*='divider'] {
+  border-color: var(--koi-border-1);
+}
+
+/* ---------- 表格（markdown） ---------- */
+body[data-dsh-koi-pond] [class*='markdown'] table {
+  border-collapse: collapse;
+}
+body[data-dsh-koi-pond] [class*='markdown'] th,
+body[data-dsh-koi-pond] [class*='markdown'] td {
+  border: 1px solid var(--koi-border-2);
+  padding: 6px 12px;
+}
+body[data-dsh-koi-pond] [class*='markdown'] th {
+  background: var(--koi-bg-3);
+  color: var(--koi-ink-1);
+}
+
+/* ---------- 引用块：池水青左边线 ---------- */
+body[data-dsh-koi-pond] [class*='markdown'] blockquote {
+  border-left: 3px solid var(--koi-water);
+  background: #4fb8c90d;
+  border-radius: 0 8px 8px 0;
+  margin: 8px 0;
+  padding: 6px 14px;
+  color: var(--koi-ink-2);
+}
+
+/* ---------- 图标按钮 ---------- */
+body[data-dsh-koi-pond] [class*='iconButton'] {
+  color: var(--koi-ink-3);
+  border-radius: 8px;
+}
+body[data-dsh-koi-pond] [class*='iconButton']:hover {
+  color: var(--koi-accent);
+  background: #3fae7a14;
+}

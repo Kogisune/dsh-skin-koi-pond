@@ -1,0 +1,157 @@
+/* ============================================================
+   koi-pond · sidebar.css — 侧栏部件
+   深池水渐变 + 锦鲤金选中态 + 竹节分隔线
+   ============================================================ */
+
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) {
+  --dsw-alias-label-primary: var(--koi-ink-1);
+  --dsw-alias-label-secondary: var(--koi-ink-2);
+  --dsw-alias-label-tertiary: var(--koi-ink-3);
+  --dsw-alias-label-caption: var(--koi-ink-4);
+  --dsw-alias-border-l1: var(--koi-border-1);
+  --dsw-alias-border-l2: var(--koi-border-2);
+  --dsw-alias-button-elevated-fill: var(--koi-bg-3);
+  --dsw-alias-button-floating-hover: var(--koi-bg-4);
+  --dsw-alias-interactive-bg-hover: #3fae7a1a;
+  --dsw-alias-interactive-bg-active: #f26a3c33;
+
+  z-index: auto;
+  background: transparent;
+  border-right: 0;
+  position: relative;
+}
+
+/* 侧栏池水底：纵向渐变 + 隐约水纹 */
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) > div {
+  background:
+    radial-gradient(120% 60% at 50% 0%, #1c34294d 0%, transparent 60%),
+    linear-gradient(180deg, var(--koi-bg-1) 0%, var(--koi-bg-2) 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset -1px 0 var(--koi-border-1);
+}
+
+/* Logo 行：宣纸衬底 + 锦鲤描边 */
+body[data-dsh-koi-pond] [class*='logoRow'] {
+  background: linear-gradient(135deg, #f26a3c14 0%, transparent 46%),
+    linear-gradient(180deg, var(--koi-bg-3) 0%, var(--koi-bg-2) 100%);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 12px;
+  min-height: 58px;
+  margin: 10px 10px 4px;
+  padding: 8px 10px;
+  box-shadow: inset 0 0 0 1px #ffffff08, 0 6px 16px #00000026;
+}
+body[data-dsh-koi-pond] [class*='logoRow'] button[class*='brand'] {
+  color: var(--koi-ink-1);
+}
+
+/* 新建会话按钮：锦鲤橙红渐变 */
+body[data-dsh-koi-pond] button[class*='newSession'] {
+  color: #fff6ef;
+  background: linear-gradient(135deg, var(--koi-accent-hi) 0%, var(--koi-accent) 55%, #d94a24 100%);
+  border: 0;
+  border-radius: 10px;
+  min-height: 40px;
+  margin: 8px 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px #f26a3c40, inset 0 1px #ffffff2e;
+  transition: filter 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+body[data-dsh-koi-pond] button[class*='newSession']:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px #f26a3c59, inset 0 1px #ffffff2e;
+}
+body[data-dsh-koi-pond] button[class*='newSession'] svg {
+  color: #fff6ef;
+}
+
+/* 分组标题 */
+body[data-dsh-koi-pond] [class*='sectionHeader'] {
+  color: var(--koi-ink-3);
+  letter-spacing: 0.04em;
+  font-size: 12px;
+}
+body[data-dsh-koi-pond] [class*='sectionHeader'] [class*='sectionLabel'] {
+  color: var(--koi-ink-3);
+}
+
+/* 搜索框 */
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [class*='search'][class*='searchExpanded']:has(> input[class*='searchInput']) {
+  background: var(--koi-bg-3);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 9px;
+  height: 40px;
+  margin: 0 10px;
+  padding-inline: 12px;
+  box-shadow: inset 0 1px 3px #0000001f;
+}
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [class*='search'][class*='searchExpanded']:has(> input[class*='searchInput']):focus-within {
+  border-color: var(--koi-accent);
+  box-shadow: inset 0 1px 3px #0000001f, 0 0 0 2px #f26a3c1f;
+}
+body[data-dsh-koi-pond] [class*='searchInput']::placeholder {
+  color: var(--koi-ink-4);
+  opacity: 1;
+}
+
+/* 会话行：静谧，选中 = 锦鲤金描边 + 橙红指示条 */
+body[data-dsh-koi-pond] [data-koi-session-row] {
+  border-radius: 8px;
+  margin-inline: 8px;
+  padding-inline: 10px;
+  height: 34px;
+}
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) [aria-selected='true'],
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) [class*='active'][role='button'] {
+  color: var(--koi-ink-1);
+  background: linear-gradient(90deg, #f26a3c24 0%, #f26a3c0a 78%, transparent 100%);
+  border-left: 2px solid var(--koi-accent);
+  border-radius: 0 8px 8px 0;
+}
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [aria-selected='true'] [class*='title'] {
+  color: var(--koi-ink-1);
+  font-weight: 500;
+}
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [aria-selected='true'] [class*='time'] {
+  color: var(--koi-gold);
+}
+body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
+  [role='button']:hover:not([aria-selected='true']) {
+  background: #3fae7a14;
+  border-radius: 8px;
+}
+
+/* 侧栏底部设置区 */
+body[data-dsh-koi-pond] [data-slot='sidebar.settings'] > :is(button, [role='button']) {
+  color: var(--koi-ink-2);
+  background: var(--koi-bg-3);
+  border: 1px solid var(--koi-border-2);
+  border-radius: 9px;
+  min-height: 42px;
+  box-shadow: 0 3px 8px #0000001f;
+}
+body[data-dsh-koi-pond] [data-slot='sidebar.settings'] > :is(button, [role='button']):is(:hover, :focus-visible) {
+  color: var(--koi-accent);
+  border-color: var(--koi-border-3);
+  background: var(--koi-bg-4);
+}
+
+/* 徽标 / cordis 面板入口 */
+body[data-dsh-koi-pond] [data-cordis-badge] {
+  color: var(--koi-ink-2);
+  background: var(--koi-bg-3);
+  border: 1px solid var(--koi-border-2);
+  min-height: 46px;
+  box-shadow: inset 0 0 0 1px #ffffff08;
+}
+body[data-dsh-koi-pond] [data-cordis-badge]:is(:hover, :focus-visible, [data-active]) {
+  color: var(--koi-accent);
+  border-color: var(--koi-accent);
+}

@@ -1,0 +1,40 @@
+{
+  "id": "koi-pond",
+  "name": "锦鲤池塘",
+  "nameEn": "Koi Pond",
+  "author": "Kogisune",
+  "tagline": "墨青池水、锦鲤点红——DeepSeek Harness 的池塘夜色",
+  "description": "一套以锦鲤池塘为意象的 DeepSeek Harness WebUI 主题。墨青池水做底、水波涟漪为纹，锦鲤橙红点睛、金鳞与荷叶绿辅佐；昼有宣纸日色、夜有池水月光，亮暗双主题。纯展示层：仅覆盖 dsw-alias 设计令牌与部件样式，不注入服务、不触达模型请求。",
+  "tags": ["koi", "pond", "east", "nature", "zen", "dark", "water"],
+  "accent": "#f26a3c",
+  "bodyAttr": "data-dsh-koi-pond",
+  "package": "dsh-skin-koi-pond",
+  "theme": {
+    "kind": "full",
+    "family": "koi",
+    "components": {
+      "background": true,
+      "sidebar": true,
+      "titlebar": true,
+      "composer": true,
+      "overlay": true,
+      "fonts": true,
+      "ui": true
+    }
+  },
+  "css": {
+    "*": ["css/base.css"],
+    "background": ["css/background.css"],
+    "sidebar": ["css/sidebar.css"],
+    "titlebar": ["css/titlebar.css"],
+    "composer": ["css/composer.css"],
+    "overlay": ["css/overlay.css"],
+    "fonts": ["css/fonts.css"],
+    "ui": ["css/ui.css"]
+  },
+  "wiring": {
+    "id": "ui-skin-koi-pond",
+    "bundleWired": false
+  },
+  "order": 5
+}

@@ -1,0 +1,106 @@
+/* ============================================================
+   koi-pond · background.css — 池水背景部件
+   墨青池水渐变 + 缓慢涟漪动画 + 右下角锦鲤剪影
+   ============================================================ */
+
+body[data-dsh-koi-pond] {
+  /* 池水：由深至浅的纵向渐变，底部透出一点幽光 */
+  background-image:
+    radial-gradient(120% 90% at 50% -10%, #162a20 0%, transparent 55%),
+    radial-gradient(90% 70% at 85% 110%, #103c2e4d 0%, transparent 60%),
+    linear-gradient(180deg, var(--koi-bg-0) 0%, var(--koi-bg-1) 100%);
+  background-attachment: fixed;
+}
+
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) {
+  background-image:
+    radial-gradient(120% 90% at 50% -10%, #fffdf4 0%, transparent 55%),
+    radial-gradient(90% 70% at 85% 110%, #2a9db414 0%, transparent 60%),
+    linear-gradient(180deg, var(--koi-bg-0) 0%, var(--koi-bg-1) 100%);
+}
+
+/* ---------- 涟漪层（纯装饰，pointer-events: none） ---------- */
+body[data-dsh-koi-pond] [data-koi-ripple] {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background-image:
+    radial-gradient(circle at 20% 30%, transparent 0 6px, #4fb8c90f 6.5px, transparent 7px),
+    radial-gradient(circle at 72% 62%, transparent 0 10px, #4fb8c90a 10.5px, transparent 11px),
+    radial-gradient(circle at 88% 22%, transparent 0 4px, #f26a3c0d 4.5px, transparent 5px);
+  animation: koi-ripple-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes koi-ripple-drift {
+  0% { transform: translateY(0) scale(1); opacity: 0.9; }
+  100% { transform: translateY(-14px) scale(1.06); opacity: 0.55; }
+}
+
+/* 单圈涟漪：缓慢扩散的水波环 */
+body[data-dsh-koi-pond] [data-koi-ripple]::before,
+body[data-dsh-koi-pond] [data-koi-ripple]::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid #4fb8c91f;
+  animation: koi-ripple-ring 9s linear infinite;
+}
+body[data-dsh-koi-pond] [data-koi-ripple]::before {
+  width: 220px;
+  height: 220px;
+  left: 18%;
+  bottom: 22%;
+}
+body[data-dsh-koi-pond] [data-koi-ripple]::after {
+  width: 140px;
+  height: 140px;
+  right: 26%;
+  bottom: 30%;
+  animation-delay: 4.5s;
+  border-color: #f26a3c1c;
+}
+
+@keyframes koi-ripple-ring {
+  0% { transform: scale(0.35); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ---------- 锦鲤剪影（右下角，水光拖尾） ---------- */
+body[data-dsh-koi-pond] [data-koi-koi] {
+  position: fixed;
+  right: clamp(18px, 4vw, 64px);
+  bottom: clamp(14px, 3vh, 44px);
+  width: clamp(120px, 14vw, 220px);
+  aspect-ratio: 2 / 1;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  filter: drop-shadow(0 6px 14px #0000004d);
+  animation: koi-swim 14s ease-in-out infinite alternate;
+}
+
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) [data-koi-koi] {
+  opacity: 0.4;
+  filter: drop-shadow(0 4px 10px #5c2a1433);
+}
+
+@keyframes koi-swim {
+  0% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(1.5deg); }
+  100% { transform: translateY(0) rotate(-2deg); }
+}
+
+/* 减动效：涟漪与锦鲤静止 */
+@media (prefers-reduced-motion: reduce) {
+  body[data-dsh-koi-pond] [data-koi-ripple],
+  body[data-dsh-koi-pond] [data-koi-koi] {
+    animation: none;
+  }
+  body[data-dsh-koi-pond] [data-koi-ripple]::before,
+  body[data-dsh-koi-pond] [data-koi-ripple]::after {
+    animation: none;
+  }
+}

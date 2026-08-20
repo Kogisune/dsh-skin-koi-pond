@@ -1,0 +1,6 @@
+# koi-pond skin bundle patch: registers the client entry into the web plugin roster.
+# Install with `dsh plugin --profile <name> add <path-or-git-url>`.
+# Mutual exclusion between full skins is managed by dsh-theme-manager.
+- insert:
+    - id: ui-skin-koi-pond
+      name: 'dsh-skin-koi-pond'
