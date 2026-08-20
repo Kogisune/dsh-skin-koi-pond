@@ -109,8 +109,8 @@ body[data-dsh-koi-pond] [data-koi-session-row] {
 body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) [aria-selected='true'],
 body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) [class*='active'][role='button'] {
   color: var(--koi-ink-1);
-  background: linear-gradient(90deg, #f26a3c24 0%, #f26a3c0a 78%, transparent 100%);
-  border-left: 2px solid var(--koi-accent);
+  background: linear-gradient(0deg, #f26a3c24 0%, #f26a3c0a 78%, transparent 100%);
+  /* border-left: 2px solid var(--koi-accent); */
   border-radius: 0 8px 8px 0;
 }
 body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])

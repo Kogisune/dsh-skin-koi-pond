@@ -314,7 +314,7 @@ const KoiPond = (() => {
     ctx.fill()
   }
   // 影子：深色投影（水下自然投影感），替代原博客版的灰色与之前试用的白色
-  const SHADOW_FILL = 'rgba(0,0,0,0.28)'
+  const SHADOW_FILL = 'rgba(8,8,8,0.01)'
   function drawShadow(k) {
     for (let i = 0; i < k.body.length; i++) {
       const b = k.body[i]
@@ -372,7 +372,7 @@ const KoiPond = (() => {
     ctx.save()
     ctx.translate(lf.x, lf.y)
     ctx.globalAlpha = curAlpha
-    ctx.fillStyle = 'rgba(0,0,0,0.22)'
+    ctx.fillStyle = 'rgba(8,8,8,0.1)'
     ctx.beginPath()
     ctx.moveTo(verts[0].x + sh, verts[0].y + sh)
     for (let v = 1; v < verts.length; v++) ctx.lineTo(verts[v].x + sh, verts[v].y + sh)
