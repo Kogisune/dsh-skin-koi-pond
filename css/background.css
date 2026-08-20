@@ -68,31 +68,6 @@ body[data-dsh-koi-pond] [data-koi-ripple]::after {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* ---------- 锦鲤剪影（右下角，水光拖尾） ---------- */
-body[data-dsh-koi-pond] [data-koi-koi] {
-  position: fixed;
-  right: clamp(18px, 4vw, 64px);
-  bottom: clamp(14px, 3vh, 44px);
-  width: clamp(120px, 14vw, 220px);
-  aspect-ratio: 2 / 1;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.5;
-  filter: drop-shadow(0 6px 14px #0000004d);
-  animation: koi-swim 14s ease-in-out infinite alternate;
-}
-
-body[data-dsh-koi-pond]:not([data-ds-dark-theme]) [data-koi-koi] {
-  opacity: 0.4;
-  filter: drop-shadow(0 4px 10px #5c2a1433);
-}
-
-@keyframes koi-swim {
-  0% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-10px) rotate(1.5deg); }
-  100% { transform: translateY(0) rotate(-2deg); }
-}
-
 /* ---------- Canvas 锦鲤池塘（carps.top koiPond 移植） ---------- */
 body[data-dsh-koi-pond] #koi-pond-dsh {
   position: fixed;
@@ -109,8 +84,7 @@ body[data-dsh-koi-pond] #koi-pond-dsh canvas {
 
 /* 减动效：涟漪与锦鲤静止 */
 @media (prefers-reduced-motion: reduce) {
-  body[data-dsh-koi-pond] [data-koi-ripple],
-  body[data-dsh-koi-pond] [data-koi-koi] {
+  body[data-dsh-koi-pond] [data-koi-ripple] {
     animation: none;
   }
   body[data-dsh-koi-pond] [data-koi-ripple]::before,

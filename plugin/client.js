@@ -9,28 +9,7 @@ import KoiPond from './koi/koiPond.js'
 const SKIN_ATTR = 'data-dsh-koi-pond'
 const STYLE_ID = 'koi-pond-style'
 const RIPPLE_ID = 'koi-pond-ripple'
-const KOI_ID = 'koi-pond-koi'
 const POND_HOST_ID = 'koi-pond-dsh'
-
-// 锦鲤剪影（SVG data URI，橙红渐变 + 金鳞 + 水泡）——远处的水墨锦鲤，与动画鱼群叠出层次
-const KOI_ART =
-  'data:image/svg+xml,' +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 100">
-<defs><linearGradient id="k" x1="0" y1="0" x2="1" y2="0">
-<stop offset="0" stop-color="#f26a3c"/><stop offset="0.6" stop-color="#ff8a5c"/><stop offset="1" stop-color="#d94a24"/>
-</linearGradient></defs>
-<path d="M18 50 C 30 34 40 26 52 42 L 30 58 Z" fill="#f26a3c" opacity="0.85"/>
-<ellipse cx="105" cy="50" rx="62" ry="30" fill="url(#k)"/>
-<path d="M80 24 C 95 12 118 12 130 26 C 115 20 92 20 80 24 Z" fill="#e85a2a"/>
-<circle cx="152" cy="42" r="5" fill="#1c2b24"/>
-<circle cx="153.5" cy="40.5" r="1.8" fill="#fff"/>
-<path d="M160 46 C 172 44 178 48 182 52" stroke="#e85a2a" stroke-width="2" fill="none" stroke-linecap="round"/>
-<path d="M70 40 C 82 46 82 54 70 60 M100 36 C 112 42 112 58 100 64 M130 40 C 140 45 140 55 130 60" stroke="#d94a24" stroke-width="2.5" fill="none" opacity="0.55"/>
-<circle cx="166" cy="64" r="3" fill="#4fb8c9" opacity="0.6"/>
-<circle cx="174" cy="70" r="2" fill="#4fb8c9" opacity="0.45"/>
-</svg>`
-  )
 
 export function apply() {
   const body = document.body
@@ -62,17 +41,6 @@ export function apply() {
   ripple.setAttribute('aria-hidden', 'true')
   body.append(ripple)
   owned.push(ripple)
-
-  // 5. 锦鲤剪影装饰层（静态水墨锦鲤，右下角）
-  const koi = document.createElement('div')
-  koi.id = KOI_ID
-  koi.dataset.koiKoi = ''
-  koi.setAttribute('aria-hidden', 'true')
-  koi.style.backgroundImage = `url("${KOI_ART}")`
-  koi.style.backgroundSize = 'contain'
-  koi.style.backgroundRepeat = 'no-repeat'
-  body.append(koi)
-  owned.push(koi)
 
   // 卸载还原
   return () => {
