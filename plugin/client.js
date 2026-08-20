@@ -10,6 +10,7 @@ const SKIN_ATTR = 'data-dsh-koi-pond'
 const STYLE_ID = 'koi-pond-style'
 const RIPPLE_ID = 'koi-pond-ripple'
 const POND_HOST_ID = 'koi-pond-dsh'
+const SCRIM_ID = 'koi-pond-scrim'
 
 export function apply() {
   const body = document.body
@@ -34,7 +35,14 @@ export function apply() {
   owned.push(pondHost)
   const cleanupPond = KoiPond.mount(pondHost, { koi: 12, fps: 30 })
 
-  // 4. 水波涟漪装饰层（纯 CSS 动画）
+  // 4. 背景遮罩（15% 白 + 3px 模糊，柔化动画、突出前景 UI）
+  const scrim = document.createElement('div')
+  scrim.id = SCRIM_ID
+  scrim.setAttribute('aria-hidden', 'true')
+  body.append(scrim)
+  owned.push(scrim)
+
+  // 5. 水波涟漪装饰层（纯 CSS 动画）
   const ripple = document.createElement('div')
   ripple.id = RIPPLE_ID
   ripple.dataset.koiRipple = ''

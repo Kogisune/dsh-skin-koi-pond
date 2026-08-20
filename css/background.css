@@ -68,6 +68,17 @@ body[data-dsh-koi-pond] [data-koi-ripple]::after {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
+/* ---------- 背景遮罩（15% 白 + 3px 模糊，柔化动画、突出前景 UI） ---------- */
+body[data-dsh-koi-pond] #koi-pond-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
 /* ---------- Canvas 锦鲤池塘（carps.top koiPond 移植） ---------- */
 body[data-dsh-koi-pond] #koi-pond-dsh {
   position: fixed;
