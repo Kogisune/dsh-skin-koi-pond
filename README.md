@@ -1,9 +1,19 @@
 # dsh-skin-koi-pond · 锦鲤池塘
 
 > DeepSeek Harness (DSH) WebUI 主题 — 墨青池水、锦鲤点红。
-> 兼容 [dsh-theme-manager](https://github.com/Kogisune/dsh-theme-manager) 主题标准（`skin.json` 声明 + 按部件拆分 CSS，支持托管模式）。
+
+兼容 [dsh-theme-manager](https://github.com/Kogisune/dsh-theme-manager) 主题标准（`skin.json` 声明 + 按部件拆分 CSS，支持托管模式）。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## 预览
+
+<p align="center">
+  <img src="preview/dark.png" alt="池塘夜色（深色）" width="49%"/>
+  <img src="preview/light.png" alt="宣纸日色（浅色）" width="49%"/>
+</p>
+
+<p align="center">深色「池塘夜色」 · 浅色「宣纸日色」</p>
 
 ## 特性
 
@@ -85,7 +95,7 @@ lib/            # 构建产物（已提交，clone 即用）
 
 ## 开源说明
 
-- 锦鲤池塘动画引擎（`plugin/koi/`）移植自 [Kogisune/carps-top](https://github.com/Kogisune/carps-top)（MIT，AstroPaper 衍生项目），原实现为博客背景的锦鲤池塘 Canvas 动画
+- 锦鲤池塘动画引擎（`plugin/koi/`）移植自 [carps.top](https://www.carps.top)（MIT，AstroPaper 衍生项目），原实现为博客背景的锦鲤池塘 Canvas 动画
 - 本主题整体以 [MIT](LICENSE) 协议开源，欢迎提交 issue 与 PR
 
 ## 许可

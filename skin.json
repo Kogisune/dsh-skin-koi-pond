@@ -9,6 +9,10 @@
   "accent": "#f26a3c",
   "bodyAttr": "data-dsh-koi-pond",
   "package": "dsh-skin-koi-pond",
+  "preview": {
+    "light": "preview/light.png",
+    "dark": "preview/dark.png"
+  },
   "theme": {
     "kind": "full",
     "family": "koi",
