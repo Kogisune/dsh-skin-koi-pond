@@ -2,7 +2,7 @@
  * koi-pond · 客户端入口（Cordis 插件）
  * 锦鲤池塘主题：注入 design-token CSS、挂载水波涟漪与锦鲤剪影装饰层。
  * 卸载时由 effect disposer 完整还原。
- * 构建时 scripts/build.mjs 会把 css/*.css 内联进 __KOI_CSS__。
+ * 构建时 scripts/build.mjs 会把 css/*.css 内联进 CSS 占位符（见下方 style.textContent）。
  */
 
 const SKIN_ATTR = 'data-dsh-koi-pond'
@@ -32,7 +32,7 @@ const KOI_ART =
 
 export function apply() {
   const body = document.body
-  const owned: (HTMLElement | HTMLStyleElement)[] = []
+  const owned = []
   const originalAttr = body.getAttribute(SKIN_ATTR)
 
   // 1. 作用域属性
