@@ -68,11 +68,10 @@ body[data-dsh-koi-pond] [data-koi-ripple]::after {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* ---------- 背景遮罩（15% 白 + 3px 模糊，柔化动画、突出前景 UI） ---------- */
-body[data-dsh-koi-pond] #koi-pond-scrim {
-  position: fixed;
+/* ---------- 背景遮罩（15% 白 + 3px 模糊）——容器内 absolute，不参与全局层级 ---------- */
+body[data-dsh-koi-pond] #koi-pond-dsh #koi-pond-scrim {
+  position: absolute;
   inset: 0;
-  z-index: 1;
   pointer-events: none;
   background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(3px);

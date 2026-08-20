@@ -35,12 +35,11 @@ export function apply() {
   owned.push(pondHost)
   const cleanupPond = KoiPond.mount(pondHost, { koi: 12, fps: 30 })
 
-  // 4. 背景遮罩（15% 白 + 3px 模糊，柔化动画、突出前景 UI）
+  // 4. 背景遮罩（15% 白 + 3px 模糊）——挂在容器内部，不参与全局层级
   const scrim = document.createElement('div')
   scrim.id = SCRIM_ID
   scrim.setAttribute('aria-hidden', 'true')
-  body.append(scrim)
-  owned.push(scrim)
+  pondHost.append(scrim)
 
   // 5. 水波涟漪装饰层（纯 CSS 动画）
   const ripple = document.createElement('div')
