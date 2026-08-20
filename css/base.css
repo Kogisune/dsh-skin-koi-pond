@@ -23,7 +23,7 @@ body[data-dsh-koi-pond] {
   --koi-accent: #f26a3c;        /* 锦鲤橙红（主强调） */
   --koi-accent-hi: #ff8a5c;     /* 锦鲤亮橙 */
   --koi-gold: #d9a441;          /* 金鳞 */
-  --koi-lotus: #40a8c9;         /* 水光蓝（辅助） */
+  --koi-lotus: #3fae7a;         /* 荷叶绿（辅助，UI 偏蓝用独立色值） */
   --koi-water: #4fb8c9;         /* 水光蓝 */
   --koi-border-1: #243a4e;
   --koi-border-2: #2e4a5e;
@@ -90,7 +90,7 @@ body[data-dsh-koi-pond]:not([data-ds-dark-theme]) {
   --koi-accent: #d9562f;
   --koi-accent-hi: #e86a40;
   --koi-gold: #b8860b;
-  --koi-lotus: #2e8ba8;
+  --koi-lotus: #2e8b57;
   --koi-water: #2a9db4;
   --koi-border-1: #d8dce6;
   --koi-border-2: #c9cede;

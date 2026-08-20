@@ -381,38 +381,27 @@ const KoiPond = (() => {
     ctx.restore()
   }
 
-  // ---- 荷叶颜色：跟随主题令牌（--koi-lotus / --koi-border-3），暗色模式自动加深 ----
+  // ---- 荷叶颜色：亮色=原版亮绿，暗色=压暗绿（上次的变色只作用于暗色模式） ----
   let leafPalette = {
-    fill: 'rgba(64,168,201,0.9)',
-    stroke: 'rgba(32,74,96,0.3)',
-    vein: 'rgba(32,74,96,0.18)',
-    center: 'rgba(32,74,96,0.24)',
-  }
-  function readThemeVar(name) {
-    try {
-      return getComputedStyle(document.body).getPropertyValue(name).trim() || null
-    } catch {
-      return null
-    }
+    fill: 'rgba(71,184,151,0.9)',
+    stroke: 'rgba(23,111,88,0.28)',
+    vein: 'rgba(23,111,88,0.17)',
+    center: 'rgba(23,111,88,0.22)',
   }
   function syncLeafPalette() {
-    const lotus = readThemeVar('--koi-lotus')
-    const edge = readThemeVar('--koi-border-3')
     const dark = document.body && document.body.hasAttribute('data-ds-dark-theme')
-    const base = lotus || '#40a8c9'
-    const ed = edge || '#40607a'
     leafPalette = dark
       ? {
-          fill: rgba(base, 185),
-          stroke: rgba(ed, 130),
-          vein: rgba(ed, 90),
-          center: rgba(ed, 110),
+          fill: 'rgba(47,130,105,0.85)',
+          stroke: 'rgba(18,72,58,0.35)',
+          vein: 'rgba(18,72,58,0.22)',
+          center: 'rgba(18,72,58,0.28)',
         }
       : {
-          fill: rgba(base, 230),
-          stroke: rgba(ed, 75),
-          vein: rgba(ed, 48),
-          center: rgba(ed, 60),
+          fill: 'rgba(71,184,151,0.9)',
+          stroke: 'rgba(23,111,88,0.28)',
+          vein: 'rgba(23,111,88,0.17)',
+          center: 'rgba(23,111,88,0.22)',
         }
   }
 
