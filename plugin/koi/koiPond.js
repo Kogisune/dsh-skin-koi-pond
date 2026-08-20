@@ -517,7 +517,12 @@ const KoiPond = (() => {
     dpr = Math.min(window.devicePixelRatio || 1, 2)
     W = window.innerWidth
     H = window.innerHeight
-    resizeCanvas()
+    // 初始尺寸（leaves 尚未创建，不能走 resizeCanvas→placeLeaves）
+    canvas.width = Math.floor(W * dpr)
+    canvas.height = Math.floor(H * dpr)
+    canvas.style.width = W + 'px'
+    canvas.style.height = H + 'px'
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
 
     scheme = resolveScheme(opts.scheme ?? localStorage.getItem('koi-scheme'))
     PERC = scheme.mods.perc
