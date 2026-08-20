@@ -1,8 +1,7 @@
 {
   "name": "dsh-skin-koi-pond",
-  "description": "锦鲤池塘 — Koi Pond theme for the DeepSeek Harness web GUI (dsh-theme-manager compatible, component-split CSS)",
+  "description": "锦鲤池塘 — Koi Pond theme for the DeepSeek Harness web GUI (Canvas koi pond animation, dsh-theme-manager compatible, component-split CSS)",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -24,8 +23,29 @@
     "build": "node scripts/build.mjs",
     "test": "node scripts/validate.mjs"
   },
-  "keywords": ["dsh", "dsh-plugin", "theme", "skin", "koi", "pond"],
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "theme",
+    "skin",
+    "koi",
+    "pond",
+    "koi-pond",
+    "canvas",
+    "锦鲤",
+    "锦鲤池塘"
+  ],
   "license": "MIT",
+  "author": "Kogisune",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kogisune/dsh-skin-koi-pond.git"
+  },
+  "homepage": "https://github.com/Kogisune/dsh-skin-koi-pond#readme",
+  "bugs": {
+    "url": "https://github.com/Kogisune/dsh-skin-koi-pond/issues"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1"
   },
