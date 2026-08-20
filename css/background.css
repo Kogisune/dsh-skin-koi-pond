@@ -4,10 +4,10 @@
    ============================================================ */
 
 body[data-dsh-koi-pond] {
-  /* 池水：由深至浅的纵向渐变，底部透出一点幽光 */
+  /* 池水：由深至浅的纵向渐变（蓝调），底部透出一点幽光 */
   background-image:
-    radial-gradient(120% 90% at 50% -10%, #162a20 0%, transparent 55%),
-    radial-gradient(90% 70% at 85% 110%, #103c2e4d 0%, transparent 60%),
+    radial-gradient(120% 90% at 50% -10%, #16283a 0%, transparent 55%),
+    radial-gradient(90% 70% at 85% 110%, #103a524d 0%, transparent 60%),
     linear-gradient(180deg, var(--koi-bg-0) 0%, var(--koi-bg-1) 100%);
   background-attachment: fixed;
 }

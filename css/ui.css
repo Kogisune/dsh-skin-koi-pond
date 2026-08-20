@@ -35,13 +35,13 @@ body[data-dsh-koi-pond]:not([data-ds-dark-theme])
 
 /* 思考块：荷叶绿微光 */
 body[data-dsh-koi-pond] [data-variant='think'] > [data-open='true'] > [data-disclosure-row='true'] {
-  background: #3fae7a14;
-  border: 1px solid #3fae7a2e;
+  background: #40a8c914;
+  border: 1px solid #40a8c92e;
   border-radius: 9px;
   color: var(--koi-ink-2);
 }
 body[data-dsh-koi-pond] [data-variant='think'][data-state='running'] [class*='row']:after {
-  background: linear-gradient(90deg, transparent, #f26a3c40 46%, #3fae7a33 62%, transparent);
+  background: linear-gradient(90deg, transparent, #f26a3c40 46%, #40a8c933 62%, transparent);
   width: 220px;
   height: 2px;
   border-radius: 2px;
@@ -87,7 +87,7 @@ body[data-dsh-koi-pond] button {
 }
 body[data-dsh-koi-pond] button:not([class*='primary']):not([class*='newSession']):hover {
   color: var(--koi-accent);
-  background: #3fae7a14;
+  background: #40a8c914;
 }
 
 /* ---------- 链接：锦鲤橙，去下划线改描边感 ---------- */
@@ -139,5 +139,5 @@ body[data-dsh-koi-pond] [class*='iconButton'] {
 }
 body[data-dsh-koi-pond] [class*='iconButton']:hover {
   color: var(--koi-accent);
-  background: #3fae7a14;
+  background: #40a8c914;
 }

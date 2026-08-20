@@ -381,26 +381,61 @@ const KoiPond = (() => {
     ctx.restore()
   }
 
+  // ---- 荷叶颜色：跟随主题令牌（--koi-lotus / --koi-border-3），暗色模式自动加深 ----
+  let leafPalette = {
+    fill: 'rgba(64,168,201,0.9)',
+    stroke: 'rgba(32,74,96,0.3)',
+    vein: 'rgba(32,74,96,0.18)',
+    center: 'rgba(32,74,96,0.24)',
+  }
+  function readThemeVar(name) {
+    try {
+      return getComputedStyle(document.body).getPropertyValue(name).trim() || null
+    } catch {
+      return null
+    }
+  }
+  function syncLeafPalette() {
+    const lotus = readThemeVar('--koi-lotus')
+    const edge = readThemeVar('--koi-border-3')
+    const dark = document.body && document.body.hasAttribute('data-ds-dark-theme')
+    const base = lotus || '#40a8c9'
+    const ed = edge || '#40607a'
+    leafPalette = dark
+      ? {
+          fill: rgba(base, 185),
+          stroke: rgba(ed, 130),
+          vein: rgba(ed, 90),
+          center: rgba(ed, 110),
+        }
+      : {
+          fill: rgba(base, 230),
+          stroke: rgba(ed, 75),
+          vein: rgba(ed, 48),
+          center: rgba(ed, 60),
+        }
+  }
+
   function drawLeafSurface(lf) {
     if (!ctx) return
     const verts = leafVerts(lf)
     ctx.save()
     ctx.translate(lf.x, lf.y)
     ctx.globalAlpha = curAlpha
-    ctx.fillStyle = 'rgba(71,184,151,0.9)'
+    ctx.fillStyle = leafPalette.fill
     ctx.beginPath()
     ctx.moveTo(verts[0].x, verts[0].y)
     for (let v = 1; v < verts.length; v++) ctx.lineTo(verts[v].x, verts[v].y)
     ctx.closePath()
     ctx.fill()
-    ctx.strokeStyle = 'rgba(23,111,88,0.28)'
+    ctx.strokeStyle = leafPalette.stroke
     ctx.lineWidth = 1.5
     ctx.beginPath()
     ctx.moveTo(verts[0].x, verts[0].y)
     for (let e = 1; e < verts.length; e++) ctx.lineTo(verts[e].x, verts[e].y)
     ctx.closePath()
     ctx.stroke()
-    ctx.strokeStyle = 'rgba(23,111,88,0.17)'
+    ctx.strokeStyle = leafPalette.vein
     ctx.lineWidth = 2
     for (let a = 0; a < Math.PI * 2; a += Math.PI / 12) {
       if (lf.hasNotch && Math.abs(angDiff(a, lf.notch)) < NOTCH_HALF + 0.12) continue
@@ -410,7 +445,7 @@ const KoiPond = (() => {
       ctx.lineTo(Math.cos(a) * rr * 0.86, Math.sin(a) * rr * 0.86)
       ctx.stroke()
     }
-    ctx.fillStyle = 'rgba(23,111,88,0.22)'
+    ctx.fillStyle = leafPalette.center
     ctx.beginPath()
     ctx.arc(0, 0, 5 * lf.size, 0, Math.PI * 2)
     ctx.fill()
@@ -527,6 +562,14 @@ const KoiPond = (() => {
     scheme = resolveScheme(opts.scheme ?? localStorage.getItem('koi-scheme'))
     PERC = scheme.mods.perc
 
+    // 荷叶颜色跟随主题（暗色模式加深）
+    syncLeafPalette()
+    let themeObserver = null
+    if (typeof MutationObserver !== 'undefined') {
+      themeObserver = new MutationObserver(syncLeafPalette)
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-ds-dark-theme'] })
+    }
+
     leaves = [spawnLeaf(100, 100, 0.4, 100, 1), spawnLeaf(0, 0, 1, 40, 1)]
     decoLeaves = []
     for (let di = 0; di < DECO_COUNT; di++) {
@@ -637,6 +680,10 @@ const KoiPond = (() => {
       if (rafId) {
         cancelAnimationFrame(rafId)
         rafId = null
+      }
+      if (themeObserver) {
+        themeObserver.disconnect()
+        themeObserver = null
       }
       window.removeEventListener('pointermove', onPointerMove)
       window.removeEventListener('pointerdown', onPointerDown)

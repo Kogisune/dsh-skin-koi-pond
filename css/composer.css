@@ -73,7 +73,7 @@ body[data-dsh-koi-pond] [data-composer-card] button[class*='primary']:disabled {
 /* 输入区底部 dock 工具条 */
 body[data-dsh-koi-pond] [data-slot='conversation.composer.dock'] > * {
   color: var(--koi-ink-3);
-  background: linear-gradient(90deg, transparent, #3fae7a0d 10% 90%, transparent);
+  background: linear-gradient(90deg, transparent, #40a8c90d 10% 90%, transparent);
 }
 body[data-dsh-koi-pond] [data-slot='conversation.composer.dock'] > * [class*='sep'] {
   color: var(--koi-ink-4);
@@ -87,5 +87,5 @@ body[data-dsh-koi-pond] [data-composer-card] [class*='trailing'] button[aria-has
 }
 body[data-dsh-koi-pond] [data-composer-card] [class*='trailing'] button[aria-haspopup='menu']:hover {
   color: var(--koi-accent);
-  background: #3fae7a0f;
+  background: #40a8c90f;
 }

@@ -12,7 +12,7 @@ body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol']) {
   --dsw-alias-border-l2: var(--koi-border-2);
   --dsw-alias-button-elevated-fill: var(--koi-bg-3);
   --dsw-alias-button-floating-hover: var(--koi-bg-4);
-  --dsw-alias-interactive-bg-hover: #3fae7a1a;
+  --dsw-alias-interactive-bg-hover: #40a8c91a;
   --dsw-alias-interactive-bg-active: #f26a3c33;
 
   z-index: auto;
@@ -124,7 +124,7 @@ body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
 }
 body[data-dsh-koi-pond] :is([data-pane='sidebar'], [class*='sidebarCol'])
   [role='button']:hover:not([aria-selected='true']) {
-  background: #3fae7a14;
+  background: #40a8c914;
   border-radius: 8px;
 }
 

@@ -21,7 +21,7 @@ body[data-dsh-koi-pond] [data-cordis-panel] {
   --dsw-alias-label-caption: var(--koi-ink-4);
   --dsw-alias-border-l1: var(--koi-border-1);
   --dsw-alias-border-l2: var(--koi-border-2);
-  --dsw-alias-interactive-bg-hover: #3fae7a1a;
+  --dsw-alias-interactive-bg-hover: #40a8c91a;
   --dsw-alias-state-warn-tertiary: #d9a44124;
   --dsw-alias-state-warn-label: var(--koi-gold);
 
@@ -77,7 +77,7 @@ body[data-dsh-koi-pond] [role='tooltip'] {
 body[data-dsh-koi-pond] [role='menuitem']:hover,
 body[data-dsh-koi-pond] [role='option']:hover,
 body[data-dsh-koi-pond] [role='option'][aria-selected='true'] {
-  background: #3fae7a1a;
+  background: #40a8c91a;
   color: var(--koi-ink-1);
 }
 
