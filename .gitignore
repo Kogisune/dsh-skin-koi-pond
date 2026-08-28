@@ -1,3 +1,6 @@
 node_modules/
 .tmp/
 *.log
+
+# WorkBuddy 本地工作区数据（任务/记忆/上下文等），不纳入仓库
+.workbuddy/
