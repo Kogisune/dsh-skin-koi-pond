@@ -1,0 +1,26 @@
+name: "✨ Feature request / 功能建议"
+description: 提出新特性、配色或改进建议
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议内容
+      description: 你想增加或改进什么？
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: 动机 / 使用场景
+      description: 为什么需要它？在何种场景下使用？
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: 补充材料
+      description: 配色参考、截图、设计稿等（可留空）
+    validations:
+      required: false

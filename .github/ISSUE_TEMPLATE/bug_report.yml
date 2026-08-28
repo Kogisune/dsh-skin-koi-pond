@@ -1,0 +1,57 @@
+name: "🐛 Bug report / 缺陷报告"
+description: 报告主题在使用中出现的视觉或行为问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量填写以下信息，便于快速复现与修复。
+  - type: input
+    id: env
+    attributes:
+      label: 环境信息
+      description: DSH 版本 / 平台（web）/ 浏览器 / 操作系统
+      placeholder: "DSH 4.x · web · Chrome 128 · macOS"
+    validations:
+      required: true
+  - type: dropdown
+    id: theme
+    attributes:
+      label: 主题模式
+      description: 出问题时的主题模式
+      options:
+        - "亮色（宣纸日色）"
+        - "暗色（池塘夜色）"
+        - "两者都有"
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: 现象描述
+      description: 发生了什么异常？
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: 复现步骤
+      description: 如何稳定复现？（可留空）
+      placeholder: "1. ... 2. ... 3. ..."
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 你期望的正确表现是什么？（可留空）
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图 / 控制台日志
+      description: 可粘贴截图链接或浏览器控制台报错（可留空）
+    validations:
+      required: false
