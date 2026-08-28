@@ -4,6 +4,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#贡献)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/Kogisune/dsh-skin-koi-pond/releases)
+[![Stars](https://img.shields.io/github/stars/Kogisune/dsh-skin-koi-pond?style=social)](https://github.com/Kogisune/dsh-skin-koi-pond/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/Kogisune/dsh-skin-koi-pond)](https://github.com/Kogisune/dsh-skin-koi-pond/commits)
 
 一套以「锦鲤池塘」为意象的 DeepSeek Harness WebUI 主题。墨青池水作底、水波涟漪为纹，锦鲤橙红点睛、金鳞与荷叶绿辅佐；昼有「宣纸日色」、夜有「池塘夜色」，亮暗双主题皆备。
 

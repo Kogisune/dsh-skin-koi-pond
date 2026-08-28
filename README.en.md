@@ -4,6 +4,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/Kogisune/dsh-skin-koi-pond/releases)
+[![Stars](https://img.shields.io/github/stars/Kogisune/dsh-skin-koi-pond?style=social)](https://github.com/Kogisune/dsh-skin-koi-pond/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/Kogisune/dsh-skin-koi-pond)](https://github.com/Kogisune/dsh-skin-koi-pond/commits)
 
 A DeepSeek Harness WebUI theme inspired by a **koi pond**. Ink-teal water as the base, ripple textures as the pattern, koi orange-red as the accent, with gold-scale and lotus-green supporting hues. A light "Rice-Paper Day" and a dark "Pond Night" theme are both included.
 
