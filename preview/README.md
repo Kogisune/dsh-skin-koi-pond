@@ -11,4 +11,4 @@
 "preview": { "light": "preview/light.png", "dark": "preview/dark.png" }
 ```
 
-重新截图后直接覆盖同名文件即可（GitHub README 与 dsh-theme-manager 面板自动读取）。
+重新截图后直接覆盖同名文件即可（GitHub README 自动读取）。

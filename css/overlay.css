@@ -4,7 +4,7 @@
    ============================================================ */
 
 body[data-dsh-koi-pond] {
-  /* 弹层 z-index 统一治理（供 theme-manager 冲突检测对齐） */
+  /* 弹层 z-index 统一治理（统一层级变量，规避弹层撞车） */
   --koi-z-dropdown: 900;
   --koi-z-popover: 950;
   --koi-z-modal: 1000;
