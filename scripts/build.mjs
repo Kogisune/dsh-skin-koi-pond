@@ -10,7 +10,8 @@
  * 模块化约定：plugin/koi/ 下的模块是「共享作用域片段」——build 去掉每个文件的
  * import/export 行后按 KOI_MODULES 顺序拼接，模块间直接引用彼此声明的变量。
  * 依赖顺序：schemes（配色）→ math（工具）→ light（光照）→ skeleton（鱼骨骼）→
- * leaf（荷叶）→ ripple（涟漪）→ render（鱼渲染）→ fish（鱼生成/AI）→ pond（主入口）。
+ * component（组件基座）→ state（状态机）→ leaf（荷叶）→ ripple（涟漪）→
+ * render（鱼渲染）→ fish（鱼装配/AI）→ pond（主入口）。
  * 鳍素材：plugin/koi/assets/*.svg 单文件 bundle 无法外链，运行时需内联 —— 把素材
  * 文本替换进渲染层的 __FIN_PEC_SVG__ / __FIN_TAIL_SVG__ 占位符（JSON 字符串）。
  */
@@ -43,6 +44,8 @@ const KOI_MODULES = [
   'koiMath.js',
   'koiLight.js',
   'koiSkeleton.js',
+  'koiComponent.js',
+  'koiState.js',
   'koiLeaf.js',
   'koiRipple.js',
   'koiRender.js',

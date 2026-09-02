@@ -28,6 +28,7 @@ let W = 0
 let H = 0
 let dpr = 1
 let frameCount = 0
+let FPS = 30 // 目标帧率（mount 时按 cfg.fps 设定；状态机按帧计时换算秒）
 let leaves = []
 let decoLeaves = []
 let curAlpha = 1
@@ -72,7 +73,6 @@ function frame() {
       }
     }
     edges(k)
-    flockStep(k)
     updateKoi(k)
     // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
     drawTail(k)
@@ -141,6 +141,7 @@ function mount(host, opts = {}) {
 
   const cfg = { koi: opts.koi ?? 12, fps: opts.fps ?? 30 }
   frameMin = 1000 / cfg.fps
+  FPS = cfg.fps
 
   dpr = Math.min(window.devicePixelRatio || 1, 2)
   W = window.innerWidth
@@ -217,6 +218,8 @@ function mount(host, opts = {}) {
     mouse.x = lastRX
     mouse.y = lastRY
     mouse.last = Date.now()
+    // 很近的点击会惊吓附近的鱼 → 进入逃跑态（往最近的边缘冲）
+    koiStartle(lastRX, lastRY)
   }
   function onPointerUp() {
     drawing = false
