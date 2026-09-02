@@ -2,10 +2,15 @@
 /**
  * koi-pond · build — 生成自包含 lib/client.js：
  *   1. css/*.css 内联进 CSS 占位符
- *   2. koi 模块（koiSchemes.js + koiPond.js）与 client.js 拼接进同一 factory
+ *   2. koi 模块（plugin/koi/*.js 按依赖顺序）与 client.js 拼接进同一 factory
  * DSH 客户端模块加载器要求：bundle 加载后必须通过
  *   window.__ModuleLoader__.load({ id, factory: (require) => {...} })
  * 注册（CommonJS factory 风格，exports.apply = apply; return module.exports）。
+ *
+ * 模块化约定：plugin/koi/ 下的模块是「共享作用域片段」——build 去掉每个文件的
+ * import/export 行后按 KOI_MODULES 顺序拼接，模块间直接引用彼此声明的变量。
+ * 依赖顺序：schemes（配色）→ math（工具）→ light（光照）→ skeleton（鱼骨骼）→
+ * leaf（荷叶）→ ripple（涟漪）→ render（鱼渲染）→ fish（鱼生成/AI）→ pond（主入口）。
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -24,6 +29,19 @@ const CSS_FILES = [
   'ui.css',
 ]
 
+/** koi 模块拼接顺序（依赖在前）。每个文件去掉 import/export 行成为作用域片段。 */
+const KOI_MODULES = [
+  'koiSchemes.js',
+  'koiMath.js',
+  'koiLight.js',
+  'koiSkeleton.js',
+  'koiLeaf.js',
+  'koiRipple.js',
+  'koiRender.js',
+  'koiFish.js',
+  'koiPond.js',
+]
+
 function readCssBundle() {
   const parts = []
   for (const f of CSS_FILES) {
@@ -33,37 +51,31 @@ function readCssBundle() {
   return parts.join('\n\n')
 }
 
-/** 去掉模块的 import/export 行，使其变量进入 factory 共享作用域 */
-function stripModuleLines(src, { imports = [], exports = [] } = {}) {
-  let out = src
-  for (const line of imports) out = out.split(line).join('')
-  for (const line of exports) out = out.split(line).join('')
-  return out
+/**
+ * 去掉模块的 import/export 行，使其变量进入 factory 共享作用域。
+ * 注意：`export function apply() {` 只去掉 export 关键字、保留函数体括号 `{`，
+ * 否则拼接后 factory 提前闭合（括号失衡）。
+ */
+function stripModuleLines(src) {
+  return src
+    .replace(/^export\s+function\s/gm, 'function ')
+    .replace(/^import\s[^\n]*$/gm, '')
+    .replace(/^export\s+default\s[^\n]*$/gm, '')
+    .replace(/^export\s*\{[^\n]*\}\s*$/gm, '')
 }
 
 /**
  * 拼接 koi 模块 + client 源码，包装为 __ModuleLoader__.load 注册形式。
- * 顺序：koiSchemes（无依赖）→ koiPond（引用前者变量）→ client（引用 KoiPond）。
+ * 顺序：KOI_MODULES（依赖序）→ client（引用 KoiPond）。
  */
-function wrapLoader({ koiSchemesSrc, koiPondSrc, clientSrc, css }) {
-  const koiSchemes = stripModuleLines(koiSchemesSrc, {
-    exports: ['export { KOI_PRESETS, getScheme, pickRandomScheme, resolveScheme }'],
-  })
-  const koiPond = stripModuleLines(koiPondSrc, {
-    imports: ["import { resolveScheme, pickRandomScheme, getScheme } from './koiSchemes.js'"],
-    exports: ['export default KoiPond'],
-  })
-  const client = stripModuleLines(clientSrc, {
-    imports: ["import KoiPond from './koi/koiPond.js'"],
-  })
-    .replace(/^export function apply\(\)/m, 'function apply()')
+function wrapLoader({ koiSrcs, clientSrc, css }) {
+  const client = stripModuleLines(clientSrc)
     .split('__KOI_CSS__').join(JSON.stringify(css))
 
-  const body = [koiSchemes, koiPond, client].join('\n\n')
+  const body = [...koiSrcs, client].join('\n\n')
 
   for (const [name, pat] of [
-    ['koiSchemes export', /export\s*\{/],
-    ['koiPond import/export', /(^|\n)\s*(import|export)\s/],
+    ['koi 模块 import/export', /(^|\n)\s*(import|export)\s/],
     ['client import/export', /(^|\n)\s*(import|export)\s/],
   ]) {
     if (pat.test(body)) throw new Error(`${name} 残留，请检查源码`)
@@ -93,15 +105,15 @@ function build() {
   writeFileSync(join(outDir, 'index.js'), readFileSync(join(ROOT, 'plugin', 'index.js'), 'utf8'))
 
   const css = readCssBundle()
+  const koiSrcs = KOI_MODULES.map((f) => stripModuleLines(readFileSync(join(ROOT, 'plugin', 'koi', f), 'utf8')))
   const clientOut = wrapLoader({
-    koiSchemesSrc: readFileSync(join(ROOT, 'plugin', 'koi', 'koiSchemes.js'), 'utf8'),
-    koiPondSrc: readFileSync(join(ROOT, 'plugin', 'koi', 'koiPond.js'), 'utf8'),
+    koiSrcs,
     clientSrc: readFileSync(join(ROOT, 'plugin', 'client.js'), 'utf8'),
     css,
   })
   writeFileSync(join(outDir, 'client.js'), clientOut)
 
-  console.log(`[koi-pond] build ok → lib/ (css ${css.length} bytes, koi modules inlined, loader-wrapped)`)
+  console.log(`[koi-pond] build ok → lib/ (css ${css.length} bytes, ${KOI_MODULES.length} koi modules inlined, loader-wrapped)`)
 }
 
 build()
