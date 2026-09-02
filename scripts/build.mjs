@@ -11,6 +11,8 @@
  * import/export 行后按 KOI_MODULES 顺序拼接，模块间直接引用彼此声明的变量。
  * 依赖顺序：schemes（配色）→ math（工具）→ light（光照）→ skeleton（鱼骨骼）→
  * leaf（荷叶）→ ripple（涟漪）→ render（鱼渲染）→ fish（鱼生成/AI）→ pond（主入口）。
+ * 鳍素材：plugin/koi/assets/*.svg 单文件 bundle 无法外链，运行时需内联 —— 把素材
+ * 文本替换进渲染层的 __FIN_PEC_SVG__ / __FIN_TAIL_SVG__ 占位符（JSON 字符串）。
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
@@ -28,6 +30,12 @@ const CSS_FILES = [
   'fonts.css',
   'ui.css',
 ]
+
+/** 内联资源：占位符 → plugin/koi/assets/ 下的素材文件（JSON 字符串值） */
+const KOI_ASSETS = {
+  __FIN_PEC_SVG__: 'fin-pectoral.svg',
+  __FIN_TAIL_SVG__: 'fin-tail.svg',
+}
 
 /** koi 模块拼接顺序（依赖在前）。每个文件去掉 import/export 行成为作用域片段。 */
 const KOI_MODULES = [
@@ -68,11 +76,20 @@ function stripModuleLines(src) {
  * 拼接 koi 模块 + client 源码，包装为 __ModuleLoader__.load 注册形式。
  * 顺序：KOI_MODULES（依赖序）→ client（引用 KoiPond）。
  */
-function wrapLoader({ koiSrcs, clientSrc, css }) {
+function wrapLoader({ koiSrcs, clientSrc, css, koiAssets }) {
   const client = stripModuleLines(clientSrc)
     .split('__KOI_CSS__').join(JSON.stringify(css))
 
-  const body = [...koiSrcs, client].join('\n\n')
+  let body = [...koiSrcs, client].join('\n\n')
+
+  // 内联鳍素材（koiRender 里的占位符 → 素材文本 JSON 字符串）
+  for (const [ph, text] of Object.entries(koiAssets)) {
+    if (!body.includes(ph)) throw new Error(`koi SVG 占位符 ${ph} 未出现在源码中`)
+    body = body.split(ph).join(JSON.stringify(text))
+  }
+  if (body.includes('__FIN_')) {
+    throw new Error('koi SVG 占位符有残留（源码占位符与 KOI_ASSETS 映射不一致），请检查')
+  }
 
   for (const [name, pat] of [
     ['koi 模块 import/export', /(^|\n)\s*(import|export)\s/],
@@ -105,15 +122,21 @@ function build() {
   writeFileSync(join(outDir, 'index.js'), readFileSync(join(ROOT, 'plugin', 'index.js'), 'utf8'))
 
   const css = readCssBundle()
+  const koiAssets = Object.fromEntries(
+    Object.entries(KOI_ASSETS).map(([ph, f]) => [ph, readFileSync(join(ROOT, 'plugin', 'koi', 'assets', f), 'utf8').trim()])
+  )
   const koiSrcs = KOI_MODULES.map((f) => stripModuleLines(readFileSync(join(ROOT, 'plugin', 'koi', f), 'utf8')))
   const clientOut = wrapLoader({
     koiSrcs,
     clientSrc: readFileSync(join(ROOT, 'plugin', 'client.js'), 'utf8'),
     css,
+    koiAssets,
   })
   writeFileSync(join(outDir, 'client.js'), clientOut)
 
-  console.log(`[koi-pond] build ok → lib/ (css ${css.length} bytes, ${KOI_MODULES.length} koi modules inlined, loader-wrapped)`)
+  console.log(
+    `[koi-pond] build ok → lib/ (css ${css.length} bytes, ${KOI_MODULES.length} koi modules inlined, ${Object.keys(koiAssets).length} svg assets inlined, loader-wrapped)`
+  )
 }
 
 build()
