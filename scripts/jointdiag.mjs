@@ -263,8 +263,12 @@ function jointMetrics(pts) {
   let bend = 0 // 总绝对转角
   let rear = 0 // 后 40% 承担转角
   let sum = 0 // 有符号和 → 整脊净弯（折/掉头程度）
-  // 只统计「有效关节」：相邻两段都 ≥ MIN_SEG，排除亚像素打结（肉眼不可见、方向无意义）
-  const MIN_SEG = 1
+  // 只统计「有效关节」：相邻两段都 ≥ MIN_SEG，排除亚像素打结（肉眼不可见、方向无意义）。
+  // MIN_SEG=1.5：flexSpine 保长重建后 body 段长恒为采样步长 ≈2.88px，任何真实折断的
+  // 相邻段都 ≥1.5px；而逃跑甩尾时 wave 摆幅过大（panic=1 尾端摆幅 ≈0.53×baseSize，
+  // 与段长同量级）会把相邻渲染点反向压缩到 <1.5px —— 那是尾梢甩动的表观伪角
+  // （实测集中在 t>0.93），不是脊柱折断。1.5px 门槛精确剔除伪影、保留真折检测。
+  const MIN_SEG = 1.5
   for (let k = 1; k < dirs.length; k++) {
     const d = wrap(dirs[k] - dirs[k - 1])
     const ad = Math.abs(d)
