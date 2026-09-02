@@ -152,6 +152,35 @@ function steer(k, type) {
 }
 
 const FLEE_R = 150
+// 掉头运动学约束（与骨骼关节限幅配套）：
+// 速度若可穿过 0，指针刚越过鱼身时鱼会在原地停一拍再反向 —— 头部轨迹在近零
+// 位移里折 180°，弧长重采样把整段转角压进亚像素段（身体打结、单关节 180°）。
+//  - 转向角速度上限：速度方向每帧最多转 MAX_TURN，掉头变成有限半径的平滑弧线
+//    （真实锦鲤转向也是弧线而非原地折返）。
+//  - 速度下限：鱼永不真正停下（巡航/逃逸都有最小前冲），轨迹始终有空间延展。
+const MAX_TURN = 0.28 // 速度方向最大转向（弧度/帧 ≈ 16°/帧，180° 掉头约 11 帧）
+const SPEED_FLOOR = 0.6 // 速度下限（px/帧）
+const FREE_TURN_SPEED = 0.4 // 旧速低于此值视为「从静止起步」：可直接对准合加速度方向（无转向限制）
+function clampHeading(k) {
+  // 在 k.vel += k.acc 之后调用：若新航向相对旧航向超过 MAX_TURN 则钳回（幅值保留，
+  // 加速度的纵向/横向效果仍并入大小）；幅值低于 SPEED_FLOOR 时抬到下限。
+  const vx = k.vel.x
+  const vy = k.vel.y
+  const sp = Math.hypot(vx, vy)
+  const oa = Math.atan2(vy - k.acc.y, vx - k.acc.x) // 旧航向（acc 已并入，先减回）
+  const os = Math.hypot(vx - k.acc.x, vy - k.acc.y) // 旧速
+  const cap = os < FREE_TURN_SPEED ? Math.PI : MAX_TURN // 静止起步不设转向限制
+  let nd = Math.atan2(vy, vx)
+  let diff = nd - oa
+  while (diff > Math.PI) diff -= 2 * Math.PI
+  while (diff < -Math.PI) diff += 2 * Math.PI
+  if (diff > cap) nd = oa + cap
+  else if (diff < -cap) nd = oa - cap
+  const cs = Math.cos(nd)
+  const sn = Math.sin(nd)
+  k.vel.x = cs * Math.max(SPEED_FLOOR, sp)
+  k.vel.y = sn * Math.max(SPEED_FLOOR, sp)
+}
 function flee(k) {
   let s = { x: 0, y: 0 }
   if (mouse.x < -999) return s
@@ -230,6 +259,9 @@ function updateKoi(k) {
   k.pos.y += k.vel.y
   k.vel.x += k.acc.x
   k.vel.y += k.acc.y
+  // 掉头运动学约束：航向每帧最多转 MAX_TURN、速度不低于 SPEED_FLOOR，
+  // 避免原地折返造成轨迹近零位移打结（配合骨骼关节限幅，见 koiSkeleton）。
+  clampHeading(k)
   k.vel = limit(k.vel, k.maxSpeed * (1 + k.panic * 1.1))
   // 头部入队：把最老的那一点搬到队首复用，容量恒定且每帧零分配。
   // trail[0] 是最新点，trail[末尾] 是最老点 —— resampleBody 由新到旧走弧长。

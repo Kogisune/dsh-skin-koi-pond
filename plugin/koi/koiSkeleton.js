@@ -72,6 +72,15 @@ const WAVE_SPAN = 2.8 // 整条鱼的头→尾相位跨度（弧度，≈ 0.45 �
 const WAVE_SPEED = 0.22 // 时间频率（弧度/帧）→ 约 0.48s/拍 @60fps，巡航摆频 ~2Hz
 const WAVE_AMP = 0.32 // 最大摆幅（相对 baseSize，尾端）
 
+// ---- 脊柱关节转角限幅 ----
+// 身体点列是头部轨迹的弧长重采样，掉头/急停时轨迹会在极短弧长内折返，
+// 整段 180° 转角会被压到 1~2 个关节上（实测单关节最大 176°，身体像被折断、
+// 且弯曲集中在头侧、尾巴僵直不参与）。这里按「头小尾大」的灵活性斜坡给每个
+// 关节限转角，超限部分沿身体向后推 —— 急转时弯曲平滑铺开、尾端甩动跟上，
+// 任何单个关节都不允许出现「折断式」大转角。数值单位 = 每个关节（约 2.9px 段）允许转角。
+const JOINT_HEAD_DEG = 7 // 头部关节允许转角小（吻部区稳定，保持「头稳」）
+const JOINT_TAIL_DEG = 26 // 尾部关节允许转角大（尾柄区灵活，承担大部分转弯）
+
 /** 创建骨骼（每条鱼一份；bind 对象复用，update 只改写字段，避免每帧分配） */
 function makeSkeleton(k) {
   const bind = {}
@@ -79,6 +88,61 @@ function makeSkeleton(k) {
     bind[name] = { t: BIND[name], i: 0, x: 0, y: 0, dx: 1, dy: 0, nx: 0, ny: 1, half: 0 }
   }
   return { bind, tan: [], wave: [], flap: 0, spread: 0 }
+}
+
+// 归一化角度到 [-π, π]
+function angNorm(a) {
+  while (a > Math.PI) a -= 2 * Math.PI
+  while (a < -Math.PI) a += 2 * Math.PI
+  return a
+}
+
+/**
+ * 脊柱关节转角限幅 + 重分布（就地整形 k.body，头 index 0 → 尾 n-1）：
+ * 身体点列是头部轨迹的弧长重采样，掉头/急停时轨迹在极短弧长内折返，会把整段
+ * 转角压到 1~2 个关节上。做法：
+ *   1. 取原始段方向序列 r[i]（头→尾）；
+ *   2. 从头向尾逐关节处理：该关节「想转的角度 + 前方推来的超限残差」超过
+ *      本关节上限（斜坡：头小尾大）则只转上限，残差继续向尾部传递；
+ *   3. 由钳制后的方向序列重建点列：头点不动、段长保持原值 → 总长与净转角守恒，
+ *      只是把「集中在某一处的折断」平滑地铺开，尾部甩动承担多出的弯曲。
+ * 正常巡游/缓弯下所有转角都小于上限 → f==r，逐位相等，几何与原来一致。
+ */
+function flexSpine(k) {
+  const pts = k.body
+  const n = pts.length
+  if (n < 6) return
+  const m = n - 1 // 段数
+  const len = new Array(m)
+  const r = new Array(m)
+  for (let i = 0; i < m; i++) {
+    const dx = pts[i + 1].x - pts[i].x
+    const dy = pts[i + 1].y - pts[i].y
+    len[i] = Math.hypot(dx, dy)
+    r[i] = Math.atan2(dy, dx)
+  }
+  const headR = (JOINT_HEAD_DEG * Math.PI) / 180
+  const tailR = (JOINT_TAIL_DEG * Math.PI) / 180
+  const f = new Array(m)
+  f[0] = r[0]
+  let resid = 0
+  for (let i = 1; i < m; i++) {
+    const cap = headR + (tailR - headR) * (i / (m - 1))
+    const want = angNorm(r[i] - r[i - 1]) + resid
+    const take = Math.max(-cap, Math.min(cap, want))
+    resid = want - take
+    f[i] = f[i - 1] + take
+  }
+  let px = pts[0].x
+  let py = pts[0].y
+  for (let i = 0; i < m; i++) {
+    const cs = Math.cos(f[i])
+    const sn = Math.sin(f[i])
+    pts[i + 1].x = px + cs * len[i]
+    pts[i + 1].y = py + sn * len[i]
+    px = pts[i + 1].x
+    py = pts[i + 1].y
+  }
 }
 
 /**
@@ -89,6 +153,9 @@ function makeSkeleton(k) {
  *   4. 鳍动效相位（flap 胸鳍扇动 / spread 尾鳍张合，均随 panic 加大）
  */
 function updateSkeleton(sk, k, frameCount) {
+  // 0) 脊柱关节转角限幅：掉头/急转的折角从「集中在 1~2 个关节」变成
+  //    「按头小尾大斜坡平滑铺开 + 尾部甩动」，再算切线/行波/部位定位。
+  flexSpine(k)
   const n = k.body.length
   const body = k.body
   // 1) 节点切线/法线（对象复用，避免每帧分配）
