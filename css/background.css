@@ -68,14 +68,24 @@ body[data-dsh-koi-pond] [data-koi-ripple]::after {
   100% { transform: scale(1.6); opacity: 0; }
 }
 
-/* ---------- 背景遮罩（15% 白 + 3px 模糊）——容器内 absolute，不参与全局层级 ---------- */
+/* ---------- 池水雾面层 —— 沉到 canvas 之下，只压池水渐变 ----------
+   原实现是全屏 backdrop-filter: blur(2px) 盖在 canvas 之上，两个问题：
+   1) 把锦鲤与荷叶一起糊掉，细节全丢；
+   2) canvas 每帧都在变，backdrop 每帧都要重算，全屏 GPU 开销。
+   改为 scrim 置于 canvas 下层（z-index 0 / canvas z-index 1），
+   用渐变雾面替代实时模糊，只作用于 body 的池水渐变。 */
 body[data-dsh-koi-pond] #koi-pond-dsh #koi-pond-scrim {
   position: absolute;
   inset: 0;
+  z-index: 0;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(3px);
+  /* 暗色：顶部一缕冷月光，底部沉入墨色 */
+  background: linear-gradient(180deg, #78bed70d 0%, #06121e1f 100%);
+}
+
+body[data-dsh-koi-pond]:not([data-ds-dark-theme]) #koi-pond-dsh #koi-pond-scrim {
+  /* 亮色：宣纸日色由外向内收，底部透一点水色 */
+  background: linear-gradient(180deg, #fffdf43d 0%, #2a9db40d 100%);
 }
 
 /* ---------- Canvas 锦鲤池塘（carps.top koiPond 移植） ---------- */
@@ -90,6 +100,7 @@ body[data-dsh-koi-pond] #koi-pond-dsh canvas {
   display: block;
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
 /* 减动效：涟漪与锦鲤静止 */
