@@ -37,6 +37,25 @@ function rgba(hex, a255) {
   const a = Math.max(0, Math.min(1, a255 / 255))
   return `rgba(${r},${g},${b},${a})`
 }
+// 把 hex 色向白色提亮 amt(0~1)，返回 hex（背脊线/亮点用）
+function lighten(hex, amt) {
+  const h = hex.replace('#', '')
+  const full =
+    h.length === 3
+      ? h
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : h
+  const to2 = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')
+  const mix = (n) => n + (255 - n) * amt
+  return (
+    '#' +
+    to2(mix(parseInt(full.substring(0, 2), 16))) +
+    to2(mix(parseInt(full.substring(2, 4), 16))) +
+    to2(mix(parseInt(full.substring(4, 6), 16)))
+  )
+}
 // 按倍率压暗一个 hex 色，返回 hex（供 AO 边缘渐变用）
 function shade(hex, f) {
   const h = hex.replace('#', '')

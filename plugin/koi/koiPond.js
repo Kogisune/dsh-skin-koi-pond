@@ -74,12 +74,12 @@ function frame() {
     edges(k)
     flockStep(k)
     updateKoi(k)
-    // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍 → 主色层 → 暗部反光 → 背鳍
+    // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
     drawTail(k)
     drawPectoralTail(k)
     drawBody(k)
     drawBodyLight(k)
-    drawDorsal(k)
+    drawBackLine(k)
   }
 
   if (frameCount % 30 === 0) ripples.push(makeRipple(rnd(0, W), rnd(0, H), false))
@@ -154,6 +154,11 @@ function mount(host, opts = {}) {
 
   scheme = resolveScheme(opts.scheme ?? localStorage.getItem('koi-scheme'))
   PERC = scheme.mods.perc
+
+  // 预热胸鳍/尾鳍素材（当前配色）：浏览器异步解码染色，尽早让首帧就有鳍；
+  // 之后 setScheme 换色时 getFinSprite 按新 color2 懒烘/缓存，无需额外接线。
+  getFinSprite('pec', scheme.c2)
+  getFinSprite('tail', scheme.c2)
 
   // 荷叶/阴影配色跟随主题（暗色模式压暗）
   syncLeafPalette()

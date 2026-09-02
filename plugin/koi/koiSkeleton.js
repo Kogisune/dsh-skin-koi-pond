@@ -64,9 +64,13 @@ const BIND = {
 
 // 行波 undulation：沿身体传播的横向摆动。t 越大摆幅越大（尾摆最明显），
 // 头部稳定 —— 这是锦鲤游动「头稳尾摆」的关键姿态。
-const WAVE_FREQ = 0.42 // 空间频率（弧度/段）
-const WAVE_SPEED = 0.2 // 时间频率（弧度/帧）
-const WAVE_AMP = 0.24 // 最大摆幅（相对 baseSize，尾部）
+// 相位用「归一化位置 × WAVE_SPAN」而非「弧度/段 × 段号」：
+// 鱼的段数 ∝ 体长，若按弧度/段，大鱼身上会挤进 2+ 个完整波（S 形蛇游），
+// 小鱼却不足一个波——观感随体型漂移。归一化后任何体长的鱼都只弯约半个波长，
+// 尾部是平滑的单一弧度（鲤科 subcarangiform 姿态）。
+const WAVE_SPAN = 2.8 // 整条鱼的头→尾相位跨度（弧度，≈ 0.45 波长）
+const WAVE_SPEED = 0.22 // 时间频率（弧度/帧）→ 约 0.48s/拍 @60fps，巡航摆频 ~2Hz
+const WAVE_AMP = 0.32 // 最大摆幅（相对 baseSize，尾端）
 
 /** 创建骨骼（每条鱼一份；bind 对象复用，update 只改写字段，避免每帧分配） */
 function makeSkeleton(k) {
@@ -108,10 +112,14 @@ function updateSkeleton(sk, k, frameCount) {
     tn.ny = dx
   }
   // 2) 行波 undulation：头部稳定，尾部摆幅最大
+  //    相位 = 归一化位置 × WAVE_SPAN，与体长（段数）解耦，任何体型都呈单弧尾摆；
+  //    t*t 包络让摆动集中在后半身，前半身近乎平直。
   sk.wave.length = n
+  const denom = Math.max(1, n - 1)
   for (let i = 0; i < n; i++) {
-    const t = i / (n - 1)
-    sk.wave[i] = Math.sin(i * WAVE_FREQ - frameCount * WAVE_SPEED + k.jitter) * (k.baseSize * WAVE_AMP * t * t)
+    const t = i / denom
+    const phase = t * WAVE_SPAN - frameCount * WAVE_SPEED + k.jitter
+    sk.wave[i] = Math.sin(phase) * (k.baseSize * WAVE_AMP * t * t)
   }
   // 3) 部位世界定位（含行波偏移）
   for (const name in BIND) {
