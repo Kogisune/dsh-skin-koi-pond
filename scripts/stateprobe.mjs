@@ -392,16 +392,15 @@ let tele2 = false
 let tprev = head(sel2)
 for (let i = 0; i < CHASE; i++) {
   // 指针贴住鱼头追（相当于把鱼围在指针下持续躲避；60 帧≈2s 后应触发逃跑）
+  // 注意：AVOID 爆发 ×3 后鱼 ~0.5s 就能冲出半径、~1s 冲出画布 —— 环绕（jump>400）
+  // 只记标记**不再 break**，否则「被围 2s → 逃跑」路径永远演示不到就先越界了。
   const h = head(sel2)
   movePointer(h.x + 6, h.y + 6)
   tick()
   const nh = head(sel2)
   const jump = Math.max(Math.abs(nh.x - tprev.x), Math.abs(nh.y - tprev.y))
-  if (jump > 400) {
-    tele2 = true
-    break
-  }
-  const sp = SPEED(nh, tprev)
+  if (jump > 400) tele2 = true
+  const sp = jump > 400 ? 0 : SPEED(nh, tprev)
   if (i < 55) {
     if (sp > avoidPeak) avoidPeak = sp
   } else if (sp > escPeak) escPeak = sp
@@ -431,7 +430,10 @@ if (!tele2) {
 }
 console.log(`  躲避期峰值=${avoidPeak.toFixed(2)}  逃跑期峰值=${escPeak.toFixed(2)}  最近边缘=${minEdge2.toFixed(0)}px  环绕=${tele2}`)
 assert('H1 逃跑期速度 ≥1.5×巡航', escPeak >= cruise * 1.5, `esc ${escPeak.toFixed(2)} vs ${(cruise * 1.5).toFixed(2)}`)
-assert('H2 逃跑期比纯躲避更快（爆发）', escPeak >= avoidPeak * 1.08, `esc ${escPeak.toFixed(2)} vs avoid ${avoidPeak.toFixed(2)}`)
+// H2 语义更新（09-07 需求变更）：AVOID 已按需求 ×3 爆发（峰值 ≈5.1×maxSpeed ≈ 逃跑爆发），
+// 「逃跑显著快于躲避」不再成立 —— 判据降为「逃跑不慢于躲避」（±5% 容差）。
+// 与历史数字不可直接比较。
+assert('H2 逃跑期速度不慢于躲避期（±5%）', escPeak >= avoidPeak * 0.95, `esc ${escPeak.toFixed(2)} vs avoid ${avoidPeak.toFixed(2)}`)
 assert('H3 逃跑触达边缘(<40px)或环绕', minEdge2 < 40 || tele2, `minEdge=${minEdge2.toFixed(0)} teleport=${tele2}`)
 
 dispose()
