@@ -107,7 +107,12 @@ function nodeT(i, n) {
 // 按弧长 t（0~1）算关节转角上限（弧度）：
 //   t < HEAD_FRAC                          → 0°     头部刚性（不能弯折）
 //   HEAD_FRAC ≤ t < HEAD_FRAC + DORSAL_FRAC → 5°→10° 上腩大刺（活动幅度小）
-//   HEAD_FRAC + DORSAL_FRAC ≤ t ≤ 1         → 10°→24° 下腹/尾柄（灵活甩尾）
+//   HEAD_FRAC + DORSAL_FRAC ≤ t ≤ 1         → 10°→34° 下腹/尾柄（灵活甩尾）
+// 尾端 24°→34°：24° 是「常态游动」的解剖合理值，但它同时把 C 形弯曲波的脉冲**削平**
+// 了（A/B 实测：加弯曲波前后 max 都卡在 24.0°，急转帧内单关节 p50 反而从 14.2° 掉到
+// 12.2° —— 多出来的弯曲帧是浅的，深不下去）。C-start 时尾柄相对头部的偏折远超
+// 常态，故放开尾段上限让 C 形能真的弯出来。巡航时 bend≈0、关节角 p50 仅 3°，
+// 该上限基本不参与，不会把常态游动变软。
 function jointCapRad(t) {
   if (t < HEAD_FRAC) return 0
   if (t < HEAD_FRAC + DORSAL_FRAC) {
@@ -115,7 +120,7 @@ function jointCapRad(t) {
     return ((5 + (10 - 5) * u) * Math.PI) / 180
   }
   const u = (t - HEAD_FRAC - DORSAL_FRAC) / (1 - HEAD_FRAC - DORSAL_FRAC)
-  return ((10 + (24 - 10) * u) * Math.PI) / 180
+  return ((10 + (34 - 10) * u) * Math.PI) / 180
 }
 
 // 找最接近给定弧长 t 的节点索引（BIND 部位定位）
@@ -140,7 +145,13 @@ function nearestIndex(t, nodeTs) {
 // 鱼的段数 ∝ 体长，若按弧度/段，大鱼身上会挤进 2+ 个完整波（S 形蛇游），
 // 小鱼却不足一个波——观感随体型漂移。归一化后任何体长的鱼都只弯约半个波长，
 // 尾部是平滑的单一弧度（鲤科 subcarangiform 姿态）。
-const WAVE_SPAN = 2.8 // 整条鱼的头→尾相位跨度（弧度，≈ 0.45 波长）
+const WAVE_SPAN = 4.5 // 整条鱼的头→尾相位跨度（弧度；λ = 2π/4.5 ≈ 1.4 体长 → 身上承载 ~0.7 波长）
+// WAVE_SPAN 2.8 → 4.5（用户目测「尾巴摆动不自然」排查定稿）：
+//   旧值身上只有 0.45 个波长 → 身体是「刚性半弧左右摆」（船桨感）而非「波在身上跑」，
+//   这是尾巴僵硬的直接来源；同时相速度 c = (0.22/2.8)×L ≈ 2.4 体长/秒，
+//   c/U ≈ 2.7（2.1~4.9），波一闪而过看不见传播。
+//   4.5 后：身上 0.7 波长（subcarangiform 的 S 形可见）、c ≈ 1.47 体长/秒，
+//   c/U ≈ 1.7（目标区间 1.1~1.7 上沿）；频率不变（0.22 rad/帧 ≈ 1.05Hz，真实锦鲤巡航 1~2Hz）。
 const WAVE_SPEED = 0.22 // 时间频率（弧度/帧）→ 约 0.48s/拍 @60fps，巡航摆频 ~2Hz
 // （原 WAVE_AMP 渲染摆幅常量已随行波几何化停用，等效倾斜幅值见 WAVE_TILT_AMP）
 
@@ -176,17 +187,27 @@ function followRate(t) {
   return 0.14 + (0.2 - 0.14) * u
 }
 
-// ---- CPG 弯曲驱动（bend 链，阶段 2：与游速解耦的恒定波速）----
-// 掉头弯曲不再让轨迹场差分「全身同时生效」（轨迹滑窗会让弯曲扭结以头部前进速度
-// 扫过全身，逃跑 ≈3.4 段/帧 → 6 帧扫完 → 尾巴同步甩到位 =「直愣愣」，实测尾滞后仅 4 帧）。
-// CPG 语义：**轨迹头端曲率 × 段长**（每段应弯角度，= turnRate×段长/游速，速度无关的
-// 正确稳态量）作为 drive 注入第一活动关节的弯曲偏置 bend[headSegs]，偏置沿链以
-// **固定速率**向后传播 —— 弯曲波以恒定速度扫过全身，尾巴最后划弧跟上、再最后回直，
-// 即真实鱼 C-turn / bend-and-coast 的波形。稳态时 bend 全身均匀 = 轨迹每段曲率，
-// 巡航缓弯身体自动贴合轨迹（无需轨迹场兜底）。
-const BEND_INJECT_GAIN = 0.4 // 弯曲偏置向 drive 信号（头端轨迹曲率）的收敛增益
+// ---- CPG 弯曲驱动（bend 链，阶段 2：C 形弯曲波，与游速解耦）----
+// 为什么必须主动注入弯曲：身体形状此前**完全**来自头部轨迹历史，而体长 ≈ 44 帧的
+// 行程（115px / 2.6px每帧）。头部一开始转向，要游满一整个身位身体才整体呈现弧度 ——
+// 在这 44 帧里身体大部分仍是转向前的直段。这就是「整条鱼以头部为中心缓慢旋转」的
+// 真正机制：**不是转得慢，是身体在等轨迹填充**。所以单靠提高转向速率（B）只会让头
+// 甩得更快、身体更跟不上，必须让身体主动弯。
+//
+// drive 取「头端曲率的**变化量**」而非曲率本身：稳态巡航转弯时曲率恒定 → drive=0 →
+// bend 衰减到 0，身体弧度仍由轨迹场提供（与改前一致，无回归、不重复计入同一份曲率）；
+// 只有**转向发起**的瞬间才有脉冲。这正是 C-turn / bend-and-coast 的波形。
+//
+// 传播用「固定关节数/帧」而非原脚手架的 rad/帧：速率受限扩散（bend[i] 追 bend[i−1]）
+// 的波前速度恒为 1 关节/帧、与 BEND_PROP_RATE 无关 —— 35 个关节要 35 帧 ≈0.58s 才
+// 传到尾，对 67ms 的闪避来说波还没到尾、动作就结束了，且该参数完全不可调。
+// 改成沿链取值位移（joints/帧）后，传播时间 = 关节数 / 速度，直接可控。
+const BEND_INJECT_GAIN = 0.4 // 弯曲偏置向 drive 信号（头端曲率变化量）的收敛增益
 const BEND_MAX = 0.42 // 弯曲偏置单关节上限（rad ≈ 24°，与尾端 cap 同量级）
-const BEND_PROP_RATE = 0.18 // 偏置沿脊柱传播速率（rad/帧，恒定 —— 波速与游速无关）
+const BEND_PROP_SPEED = 3.0 // 传播速度（关节/帧，恒定 —— 波速与游速无关）
+// 总弯曲量 ≈ 脉宽(关节数) × 幅值 = 驱动持续帧数 × BEND_PROP_SPEED × BEND_MAX。
+// 当前组合：2 帧驱动 × 3 关节/帧 × 0.42 ≈ 2.5 rad ≈ 145° —— 一个明显的 C。
+// 想更夸张就调大 BEND_MAX 或 BEND_PROP_SPEED；想让波扫得更慢就调小后者。
 
 // ---- CPG 行波（几何化）----
 // 真实鱼中线横向位移 y(x,t) = A(x)·sin(kx − ωt)，A(x) = c1·x + c2·x²（头稳尾增）。
@@ -196,7 +217,10 @@ const BEND_PROP_RATE = 0.18 // 偏置沿脊柱传播速率（rad/帧，恒定 �
 // 幅值随 beat/panic 调制（保留原渲染层的调制公式）：怠速近停不摆、爆发大摆高频。
 const WAVE_TILT_AMP = 0.156
 function spineTilt(t, ph0, k) {
-  const amp = WAVE_TILT_AMP * (0.45 + 0.55 * Math.min(1.35, k.beat || 1)) * (1 + 0.4 * (k.panic || 0))
+  // 幅值帽 1.35 → 2.2：躲避/逃跑爆发时 beat 冲到 2.0~2.5，旧帽把幅值贡献截断，
+  // 观感 =「尾巴甩得快但身体 S 形不够深」（实测躲避摆幅仅巡航 1.5×，真实鱼
+  // fast-start 为 2~4×）。帽只影响 beat>1.35 的爆发场景，巡航（beat≈1）完全不变。
+  const amp = WAVE_TILT_AMP * (0.45 + 0.55 * Math.min(2.2, k.beat || 1)) * (1 + 0.4 * (k.panic || 0))
   return Math.sin(ph0 - t * WAVE_SPAN + k.jitter) * amp * t * t
 }
 
@@ -222,6 +246,9 @@ function makeSkeleton(k) {
   const rel = new Float32Array(m) // 关节相对角（CPG 关节状态：弯曲/摆动的载体）
   const followRates = new Float32Array(m)
   const jointCaps = new Float32Array(m)
+  // C 形弯曲波状态：bend=当前帧弯曲偏置，bendPrev=上一帧（沿链取值用，保证真传播）
+  const bend = new Float32Array(m)
+  const bendPrev = new Float32Array(m)
   for (let i = 0; i < m; i++) {
     followRates[i] = followRate(nodeTs[i + 1])
     jointCaps[i] = jointCapRad(nodeTs[i + 1])
@@ -232,7 +259,23 @@ function makeSkeleton(k) {
   // 出生体态 = 沿初速方向的直线鱼（避免出生第一帧身体从 0 角甩到位）
   const a0 = Math.atan2(k.vel.y, k.vel.x)
   for (let i = 0; i < m; i++) spine[i] = a0
-  return { bind, tan: [], wave: [], flap: 0, spread: 0, nodeTs, spine, rel, followRates, jointCaps, headSegs }
+  return {
+    bind,
+    tan: [],
+    wave: [],
+    flap: 0,
+    spread: 0,
+    nodeTs,
+    spine,
+    rel,
+    followRates,
+    jointCaps,
+    headSegs,
+    bend,
+    bendPrev,
+    prevHeadR: a0, // 上一帧航向（算转向角速度用）
+    prevKappa: 0, // 上一帧头端曲率（取变化量用）
+  }
 }
 
 // 归一化角度到 [-π, π]
@@ -277,6 +320,31 @@ function updateSpine(k) {
   //    中线 = 低频转弯弯曲（轨迹曲率）+ 高频推进行波（tilt），同一套几何。
   const ph0 = k.swimPhase || frameCount
   for (let i = 0; i < m; i++) r[i] += spineTilt(nodeTs[i], ph0, k)
+  // 2.5) C 形弯曲波（CPG 弯曲链）：头端曲率变化 → 脉冲注入第一活动关节，
+  //      再以固定关节数/帧沿链向尾传播（用 bendPrev 取值，保证是「传播」而非瞬时同步）。
+  const bend = sk.bend
+  const bendPrev = sk.bendPrev
+  const m0 = Math.max(0, Math.min(m - 1, headSegs))
+  const vh = Math.atan2(k.vel.y, k.vel.x)
+  const headOmega = angNorm(vh - sk.prevHeadR) // 航向角速度（rad/帧）
+  const vl = Math.max(0.35, Math.hypot(k.vel.x, k.vel.y))
+  const seg0 = len[m0] || 1
+  // 稳态每关节应弯角度 = ω × 段长 / 游速 = 段长 / 转弯半径（与游速无关的纯几何量）
+  const kappa = (headOmega * seg0) / vl
+  let drive = kappa - sk.prevKappa // 仅取转向「发起」的变化量
+  if (drive > BEND_MAX) drive = BEND_MAX
+  else if (drive < -BEND_MAX) drive = -BEND_MAX
+  sk.prevHeadR = vh
+  sk.prevKappa = kappa
+  bendPrev.set(bend)
+  bend[m0] += (drive - bend[m0]) * BEND_INJECT_GAIN
+  for (let i = m0 + 1; i < m; i++) {
+    const src = i - BEND_PROP_SPEED
+    const i0 = Math.max(m0, Math.min(m - 1, Math.floor(src)))
+    const i1 = Math.max(m0, Math.min(m - 1, i0 + 1))
+    const f = Math.max(0, Math.min(1, src - i0))
+    bend[i] = bendPrev[i0] + (bendPrev[i1] - bendPrev[i0]) * f
+  }
   // 3) 跟随层（相对角域）：关节角 rel[i] 向目标差分 relT = angNorm(r[i]−r[i−1]) 低通收敛。
   //    rel 被 cap 钳为小量 → 无 wrap 跳变；r/tilt 连续 → relT 连续 → 无拉锯抖动。
   //    头段（i < headSegs）rel=0：刚性棍沿轨迹方向（tilt 头部 t²≈0，天然对齐）。
@@ -287,7 +355,8 @@ function updateSpine(k) {
       spine[i] = spine[i - 1]
       continue
     }
-    const relT = angNorm(r[i] - r[i - 1])
+    // 目标关节角 = 轨迹场曲率（低频、稳态）+ 行波倾斜（高频）+ C 形弯曲脉冲（瞬态）
+    const relT = angNorm(r[i] - r[i - 1]) + bend[i]
     const step = Math.max(-rates[i], Math.min(rates[i], angNorm(relT - rel[i]) * FOLLOW_GAIN))
     rel[i] += step
     // 4) 形态层：关节角上限。被钳量不需残差后推 —— rel 是状态，下一帧继续追目标

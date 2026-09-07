@@ -19,12 +19,32 @@ const FISH_STATE = Object.freeze({
 })
 
 // 每条鱼的状态数据（对象复用，字段就地改写）
+// avoidDir/avoidRepath：躲避的锁定逃跑方向 + 低频改判计时器（见 koiFish avoidWish ——
+// C-start 语义：进躲避时锁定方向全力爆发，不逐帧跟随指针改判）
 function mkFishState() {
-  return { name: FISH_STATE.NORMAL, prev: FISH_STATE.NORMAL, t: 0, avoidT: 0, esc: null }
+  return {
+    name: FISH_STATE.NORMAL,
+    prev: FISH_STATE.NORMAL,
+    t: 0,
+    avoidT: 0,
+    esc: null,
+    avoidDir: null,
+    avoidRepath: 0,
+  }
 }
 
 // 躲避生效半径（px，指针中心到鱼头）
 const FLEE_R = 150
+// 触发迟滞带：退出躲避仍用 FLEE_R，但从普通态**再入**躲避要求更近（0.7×FLEE_R）。
+// 进/出同半径时，指针在 150px 边缘晃动会让鱼「进→出→进」地反复触发躲避
+// （每次 re-enter 都重置躲避节奏，观感即「原地抽搐」）。150→105px 的迟滞带
+// 保证一次触发后要么持续躲避、要么干脆退出，不会在边缘抖。
+const FLEE_R_ENTER = FLEE_R * 0.7
+// 退出半径：躲避状态要**跑出 1.6×FLEE_R（240px）**才退出（用户实测：150px 就退出
+// 太近，鱼刚弹开一点就停）。三段迟滞：进 105px → 持续躲避 → 出 240px。
+// 与 rollAnchorAway 的锚点安全距离（同 240px）对齐：退出躲避时锚点必在半径外，
+// 不会立刻把鱼往回拉。
+const FLEE_R_EXIT = FLEE_R * 1.6
 // 点击惊吓半径（px，距离比这更近的点按才算「很近的点击」）
 const ESCAPE_CLICK_R = 60
 // 被围住判定：连续躲避超过该秒数 → 逃跑
@@ -57,10 +77,19 @@ function enterState(k, st) {
     fs.esc = nearestEdgeTarget(k)
     fs.avoidT = 0
     if (ripples && typeof makeRipple === 'function') ripples.push(makeRipple(k.pos.x, k.pos.y, true))
+  } else if (st === FISH_STATE.AVOID) {
+    // C-start：进入躲避**立刻锁定一次**逃跑方向（之后仅低频计时/紧急情况改判，
+    // 见 koiFish.js avoidWish）—— 旧实现每帧按指针位置重算方向，指针一动鱼头
+    // 就实时旋转（?koitest 调试层目测确认），真实鱼是选好方向就全力远离。
+    if (typeof lockAvoidDir === 'function') lockAvoidDir(k)
   } else if (st === FISH_STATE.NORMAL) {
     // 逃跑收尾（edges 越界后回来）：清目标、panic 先压一档再自然衰减
     fs.esc = null
     k.panic = Math.min(k.panic, 0.4)
+    // 关键：丢弃「被吓跑之前想去的地方」。旧锚点仍在原地的话，回到普通态的瞬间
+    // 鱼就会掉头往回游，而那里很可能还在指针半径内 → 反复触发躲避。
+    // 换一个远离威胁的新锚点，打断「躲开 → 返回 → 再躲」的循环。
+    if (typeof rollAnchorAway === 'function') rollAnchorAway(k, mouse.x, mouse.y)
   }
 }
 
@@ -72,7 +101,10 @@ function updateFishState(k) {
   if (fs.name === FISH_STATE.ESCAPE) return
   const hasMouse = mouse.x > -999
   const d = dist(k.pos, mouse)
-  if (hasMouse && d < FLEE_R) {
+  // 三段迟滞：普通态要更近才触发（FLEE_R_ENTER=105）；躲避态要跑出更远才退出
+  // （FLEE_R_EXIT=240，见上）—— 弹开一次就跑远，不在指针边缘反复横跳
+  const rTrigger = fs.name === FISH_STATE.NORMAL ? FLEE_R_ENTER : FLEE_R_EXIT
+  if (hasMouse && d < rTrigger) {
     if (fs.name !== FISH_STATE.AVOID) enterState(k, FISH_STATE.AVOID)
     // 连续躲避计时（离开半径/指针消失即清零）：被围超过阈值 → 逃跑
     fs.avoidT++
