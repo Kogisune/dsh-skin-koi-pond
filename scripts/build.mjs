@@ -53,11 +53,19 @@ const KOI_MODULES = [
   'koiPond.js',
 ]
 
+/**
+ * 读入文本并规范化行尾为 LF。
+ * Windows 下工作区文件可能是 CRLF（git autocrlf / 检出方式不同），直接内联会让 lib/ 产物
+ * 随平台漂移——实测每次 build 都让 lib/client.js 产生 4 处差异（内联 SVG 里的 \r\n），
+ * 污染 diff、干扰 review。产物是构建输出，行尾必须与平台无关。
+ */
+const readText = (p) => readFileSync(p, 'utf8').replace(/\r\n/g, '\n')
+
 function readCssBundle() {
   const parts = []
   for (const f of CSS_FILES) {
     const p = join(ROOT, 'css', f)
-    parts.push(`/* ===== ${f} ===== */\n${readFileSync(p, 'utf8')}`)
+    parts.push(`/* ===== ${f} ===== */\n${readText(p)}`)
   }
   return parts.join('\n\n')
 }
@@ -122,16 +130,16 @@ function build() {
   const outDir = join(ROOT, 'lib')
   mkdirSync(outDir, { recursive: true })
 
-  writeFileSync(join(outDir, 'index.js'), readFileSync(join(ROOT, 'plugin', 'index.js'), 'utf8'))
+  writeFileSync(join(outDir, 'index.js'), readText(join(ROOT, 'plugin', 'index.js')))
 
   const css = readCssBundle()
   const koiAssets = Object.fromEntries(
-    Object.entries(KOI_ASSETS).map(([ph, f]) => [ph, readFileSync(join(ROOT, 'plugin', 'koi', 'assets', f), 'utf8').trim()])
+    Object.entries(KOI_ASSETS).map(([ph, f]) => [ph, readText(join(ROOT, 'plugin', 'koi', 'assets', f)).trim()])
   )
-  const koiSrcs = KOI_MODULES.map((f) => stripModuleLines(readFileSync(join(ROOT, 'plugin', 'koi', f), 'utf8')))
+  const koiSrcs = KOI_MODULES.map((f) => stripModuleLines(readText(join(ROOT, 'plugin', 'koi', f))))
   const clientOut = wrapLoader({
     koiSrcs,
-    clientSrc: readFileSync(join(ROOT, 'plugin', 'client.js'), 'utf8'),
+    clientSrc: readText(join(ROOT, 'plugin', 'client.js')),
     css,
     koiAssets,
   })
