@@ -2,12 +2,23 @@
 /**
  * 体型分布 + 轮廓检查：hook 主画布 ellipse 调用流，
  * 按 alpha 方向切段取身体层，输出每条鱼的轮廓直径序列（验证锦鲤比例与大小差异）。
- * 用法：node .tmp/sizeprofile.mjs <client.js 路径> [KOI_DARK=1]
+ * 用法：node scripts/sizeprofile.mjs <client.js 路径> [KOI_DARK=1]
+ * 环境变量：KOI_SEED=随机种子(默认20260902，与 stateprobe 同种子体系)。
  */
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 
 const target = process.argv[2] || 'lib/client.js'
+
+// ---- 可复现随机：LCG 种子替换沙箱 Math.random，同一产物每次结果完全一致 ----
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
+function lcg() {
+  seed = (seed * 1664525 + 1013904223) >>> 0
+  return seed / 4294967296
+}
+const sandboxMath = Object.create(Math)
+sandboxMath.random = lcg
 
 // ---- DOM mock ----
 let recording = false
@@ -94,7 +105,7 @@ const bodyEl = makeEl('body')
 let rafQ = []
 const sandbox = {
   console,
-  Math,
+  Math: sandboxMath,
   Date,
   document: {
     body: bodyEl,

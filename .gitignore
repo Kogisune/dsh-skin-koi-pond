@@ -1,4 +1,6 @@
 node_modules/
+# 临时/产物目录：回归 SVG 快照、旧构建快照（client-*.js）等。
+# 回归脚本一律放 scripts/ 并纳入版本管理 —— 放这里既不会被提交，也容易与 scripts/ 产生过时的同名副本。
 .tmp/
 *.log
 

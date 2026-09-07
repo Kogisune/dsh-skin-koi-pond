@@ -6,13 +6,26 @@
  *   step  = 相邻身体点的间距中位数（越大 → 越容易露出串珠纹）
  *   span  = 单次绘制里头点到尾段末点的距离（≈ 体长，随速度漂移即「被拉长」）
  * 并模拟鼠标悬停触发躲闪，对比巡航 / 躲闪两态。
- * 用法：node .tmp/fishshape.mjs <client.js 路径> <标签>
+ * 用法：node scripts/fishshape.mjs <client.js 路径> [标签]
+ * 环境变量：KOI_WARM=预热帧数、KOI_SEED=随机种子(默认20260902)。
+ *   注：本探针的断言指标（体长/段距漂移 =1.00×、段距中位 2.87）测的是保长约束，
+ *   与随机运动无关，未固定种子时也稳定；加种子是为了让鱼样本/体长等输出同样可复现。
  */
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 
 const target = process.argv[2]
 const label = process.argv[3] || target
+
+// ---- 可复现随机：LCG 种子替换沙箱 Math.random，同一产物每次结果完全一致 ----
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
+function lcg() {
+  seed = (seed * 1664525 + 1013904223) >>> 0
+  return seed / 4294967296
+}
+const sandboxMath = Object.create(Math)
+sandboxMath.random = lcg
 
 // ---- DOM mock ----
 const listeners = Object.create(null)
@@ -144,7 +157,7 @@ const bodyEl = makeEl('body')
 let rafQ = []
 const sandbox = {
   console,
-  Math,
+  Math: sandboxMath,
   Date,
   document: {
     body: bodyEl,
@@ -393,4 +406,34 @@ if (process.env.KOI_REDUCED) {
 }
 
 dispose()
+
+// ---- 断言（回归） ----
+// 目标：身体是「保长重建」的，段距/体长不应随速度（巡航 vs 躲闪）漂移；且环绕瞬移
+// 不得把身体拉断（单帧内出现 >GLITCH 的点距）。修复前：段距漂移 1.06×、体长漂移 0.98×
+// （旧版 body 是头部轨迹的弧长重采样，段距随速度拉伸 → 体长被拉长/串珠纹）。
+const spanDrift = pct(panic.spanN, 0.5) / Math.max(0.01, pct(cruise.spanN, 0.5))
+const stepDrift = pct(panic.step, 0.5) / Math.max(0.01, pct(cruise.step, 0.5))
+// [L] 是区分度最高的一项：解析段长重建让段距**恒定**（实测 p95−min = 0.00px）；
+// 旧版弧长重采样在高速躲闪时会把段距拉开（CPG 前快照实测 0.10px，差一个数量级）。
+// 而 [J][K] 的漂移比值区分度有限（CPG 前后是 1.00× vs 0.99×，靠它抓不住回归），
+// 故保留为「大回归兜底」，真正的主判据是 [L]。
+const mnArr = (a) => (a.length ? a.reduce((x, y) => (y < x ? y : x), Infinity) : 0)
+const stepSpread = pct(panic.step, 0.95) - mnArr(panic.step)
+const glitchTotal = cruise.glitch + panic.glitch + bystander.glitch
+const nanSteps = [...cruise.step, ...panic.step, ...bystander.step].filter((v) => !Number.isFinite(v)).length
+const enough = cruise.step.length > 0 && panic.step.length > 0
+const okF = {
+  J: enough && Number.isFinite(spanDrift) && Math.abs(spanDrift - 1) <= 0.05, // 体长不随速度漂移（兜底）
+  K: enough && Number.isFinite(stepDrift) && Math.abs(stepDrift - 1) <= 0.05, // 段距不随速度漂移（兜底）
+  L: enough && Number.isFinite(stepSpread) && stepSpread <= 0.05, // 段距恒定（主判据，旧版 0.10px）
+  M: glitchTotal === 0 && nanSteps === 0, // 无拉断帧、无 NaN 坐标
+}
+const f2 = (x) => (Number.isFinite(x) ? x.toFixed(2) : '—')
+console.log(`[J] 体长漂移 ≤±5%   ${f2(spanDrift)}×  →  ${okF.J ? '✓' : '✗'}`)
+console.log(`[K] 段距漂移 ≤±5%   ${f2(stepDrift)}×  →  ${okF.K ? '✓' : '✗'}`)
+console.log(`[L] 段距恒定     p95−min=${f2(stepSpread)}px（≤0.05）  →  ${okF.L ? '✓' : '✗'}`)
+console.log(`[M] 无拉断/NaN     拉断帧=${glitchTotal}  NaN=${nanSteps}  →  ${okF.M ? '✓' : '✗'}`)
+const passF = okF.J && okF.K && okF.L && okF.M
+console.log(passF ? `══ 鱼体几何断言通过 ✓（${label}）` : `══ 存在 FAIL ✗（${label}）`)
 console.log(`${label.padEnd(16)} apply/dispose 无异常 ✓`)
+process.exit(passF ? 0 : 1)

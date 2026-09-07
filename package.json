@@ -21,7 +21,10 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "test": "node scripts/validate.mjs"
+    "test": "node scripts/test.mjs",
+    "test:no-build": "node scripts/test.mjs --no-build",
+    "bench": "node scripts/bench.mjs lib/client.js bench",
+    "sizeprofile": "node scripts/sizeprofile.mjs lib/client.js"
   },
   "keywords": [
     "dsh",

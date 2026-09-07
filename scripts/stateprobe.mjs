@@ -23,7 +23,8 @@ const WARM = Number(process.env.KOI_WARM || 150)
 const AFTER = Number(process.env.KOI_CLICK || 260)
 
 // ---- 可复现随机：LCG 种子替换 Math.random，同一产物每次结果一致 ----
-let seed = 20260902
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
 function lcg() {
   seed = (seed * 1664525 + 1013904223) >>> 0
   return seed / 4294967296

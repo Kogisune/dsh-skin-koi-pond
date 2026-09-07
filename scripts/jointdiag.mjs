@@ -9,13 +9,26 @@
  * 指针模拟：以高于鱼速的速度追最近一条鱼并反复穿过它 → 逼迫 180° 掉头。
  * 修复前同口径基线：p99=166.8° / 急转帧含 >45° 折角 382/484(79%) / 折角集中于头侧。
  * 用法：node scripts/jointdiag.mjs <client.js 路径> [标签]
- * 环境变量：KOI_WARM=预热帧数(默认180)、KOI_FRAMES=追赶帧数(默认500)。
+ * 环境变量：KOI_WARM=预热帧数(默认180)、KOI_FRAMES=追赶帧数(默认500)、
+ *           KOI_SEED=随机种子(默认20260902，与 stateprobe 同种子体系)。
  */
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 
 const target = process.argv[2]
 const label = process.argv[3] || target
+
+// ---- 可复现随机：LCG 种子替换沙箱 Math.random，同一产物每次结果完全一致 ----
+// 未固定种子时急转帧样本在 494~780 间漂移（±58%），p99 在 19.7~21.4° 间抖动，
+// 跨次数值不可比、易把噪声误读成回归/改善。固定种子后所有指标可逐位复现。
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
+function lcg() {
+  seed = (seed * 1664525 + 1013904223) >>> 0
+  return seed / 4294967296
+}
+const sandboxMath = Object.create(Math)
+sandboxMath.random = lcg
 
 // ---- DOM / ctx mock（记录主画布 ellipse 结算几何 + CTM） ----
 const listeners = Object.create(null)
@@ -148,7 +161,7 @@ const bodyEl = makeEl('body')
 let rafQ = []
 const sandbox = {
   console,
-  Math,
+  Math: sandboxMath,
   Date,
   document: {
     body: bodyEl,

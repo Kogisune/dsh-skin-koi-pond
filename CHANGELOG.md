@@ -97,6 +97,33 @@
 ### 🧪 回归断言
 - **finshape（鳍几何断言，新增 `scripts/finshape.mjs`）**：黑盒驱动 `lib/client.js` 真实产物，从主画布绘制流反解贴图 CTM 与 stroke 折线，断言 A) 胸鳍贴图朝「尾向偏外」、B) 尾鳍贴图朝尾向伸展、C) 背脊线 = 沿身体中线的 stroke（存在且连续，旧整膜锯齿必 FAIL）、D) 行波单弧尾摆（横向翻转 ≤1，多波蛇游必 FAIL）。与 `fishshape`（体形）/ `bench`（绘制调用）并列：`node scripts/finshape.mjs lib/client.js finshape`
 
+### 🧪 回归断言
+- **回归测试总入口 `scripts/test.mjs`（`npm test` 现在跑全部断言探针）**：此前 `npm test` 只跑 `validate.mjs`（纯结构校验），行为/几何/鳍形/状态机四类断言全不在 CI 内。新入口串行执行 build → validate → jointdiag → fishshape → finshape → stateprobe，每个探针退出码即断言结果，全部 0 才 exit 0；默认先 build（保证测的是当前源码而非过期产物），支持 `--no-build` / `--bench` / `--verbose`。实测全绿 **4.1s**。失败时打印各探针的断言行 + 汇总表并用退出码告知 CI —— 用 CPG 前快照验证过：3/5 探针 FAIL、exit=1
+- **`fishshape` 补断言退出码（J/K/L/M）**：此前它只有测量输出、无 `process.exit`，数值劣化也返回 0，接入 CI 等于没接。新增 J 体长漂移 ≤±5%、K 段距漂移 ≤±5%、**L 段距恒定 `p95−min ≤0.05px`**、M 无拉断帧/NaN。其中 **L 是主判据** —— 解析段长重建让段距恒为 0.00px，旧版弧长重采样在躲闪时是 **0.10px**（差一个数量级）；J/K 的漂移比值区分度有限（CPG 前后仅 1.00× vs 0.99×），只作大回归兜底。用 CPG 前快照验证：L=0.10px → FAIL exit=1 ✓
+- **`bench` / `sizeprofile` 不纳入 `npm test`**：两者是纯测量报告、无断言退出码，`bench` 可通过 `--bench` 纳入（只跑不判）。若将来要让它们真正进 CI，需先补断言语义 —— `fishshape` 本条目已示范了「把稳定指标转成机器判定」的做法（挑区分度最大的量，而非波动与阈值同量级的量）
+- **`build.mjs` 产物行尾规范化**：Windows 下（git autocrlf）每次 build 都让 `lib/client.js` 产生 4 处行尾差异（内联 SVG 的 `\r\n`），污染 diff、干扰 review。新增 `readText()` 统一把读入文本规范化为 LF。副作用：CSS 内联字节数 29633 → **28841**（一次性，原产物里的 CSS 本就是 CRLF），此后 build 幂等
+- **新增 `.gitattributes`：`lib/* -text`**：上一条的配套——只规范化还不够。本机 `core.autocrlf=true` 会把 checkout 出的 `lib/*.js` 落成 CRLF，而 build 按 LF 生成，于是**即便产物字节与 HEAD 完全一致，`git status` 仍把 `lib/index.js` 标成已修改**（幻影 diff，实测 HEAD 与工作区均 151 字节、0 个 CR）。给产物目录标 `-text` 后按字节比较，build 后 `lib/index.js` 恢复干净
+- **`.tmp/` 过时副本归档**：`.tmp/` 下 5 个与 `scripts/` 同名的脚本（bench / fishshape / jointdiag / sizeprofile / finshape，其中 jointdiag 的 `MIN_SEG` 还是旧的 1）与已失效的 `dbgalpha.mjs` 移至 `.tmp/_archive/`，避免误跑过时版本。保留 3 个 `client-*.js` 旧快照（CPG 前对照基线，有回归价值）。`.gitignore` 补充说明：`.tmp/` 只放产物，脚本一律入 `scripts/`
+- **`finshape` 输出目录自动创建**：此前全新 clone（`.tmp/` 被 gitignore 不存在）会报 `SVG 写入失败: ENOENT` 且退出码仍为 0（静默丢快照）。改为 `mkdirSync(recursive)`
+- `package.json` 新增 `test:no-build` / `bench` / `sizeprofile` 脚本入口
+
+- **全部回归探针统一可复现随机种子（LCG，默认 20260902，`KOI_SEED` 可覆盖）**：此前 8 个脚本里**只有 `stateprobe` 有种子**，jointdiag / fishshape / finshape / bench / sizeprofile 均直接用未固定的 `Math.random`，同一产物连跑数值各不相同 —— 回归数字无法跨次比较，噪声会被误读成回归或改善。修复前实测波动（同一 `lib/client.js` 连跑 3 次）：
+  - `jointdiag`：p99 = 19.7 / 20.7 / 21.4°，**急转帧样本 494 / 780 / 630（±58%）**
+  - `finshape`：[B] 尾鳍朝尾 min = +0.892 / +0.918 / **−0.203**（异常率 0% / 0% / **5%**，数值跨过 0）；[D] 翻转分布 0:42 1:38 → 0:50 1:22
+  - `bench`：ellipse/帧 1759 vs 1647（±7%，鱼数/体型随机所致）
+  - `fishshape`：**唯一不受影响** —— 漂移恒 1.00×、段距中位 2.87、拉断 0。因其测的是保长约束，与随机运动无关
+  - 实现：各脚本在 `const sandbox = { Math }` 处改用 `sandboxMath`（`Object.create(Math)` + `random = lcg`），沙箱内的鱼群初始化/漫游/体型随机全部走 LCG；探针自身调用的 `Math.*` 仍是宿主原生实现，不受影响
+  - 修复后实测：上述 5 个探针连跑 3 次**逐位一致**（jointdiag p99 恒 20.7°、急转帧恒 531；finshape [B] min 恒 0.908；bench ellipse/帧 恒 1647.0）
+- **⚠️ 基准重录（种子 20260902）**：固定种子后各探针数字是**确定值而非分布**，与本次之前 CHANGELOG 记录的历史数字**不可直接比较**（历史值含未固定种子的噪声，且 jointdiag 中途还改过 `MIN_SEG` 门槛 1→1.5px）。当前基准：
+  - `jointdiag`：p99 **20.7°**、max **24.0°**（= 尾端 cap 精确钳制）、急转帧 **531**、>45° 折角 **0**
+  - `finshape`：A min 0.559 / 异常 0%，B min 0.908 / 异常 0%，C 大鱼 96 缺失 0，D 翻转 0:37 1:27
+  - `fishshape`：体长漂移 **1.00×**、段距漂移 **1.00×**、段距中位 **2.87**、拉断 0
+  - `stateprobe`：巡航中位 2.51px/帧、点击峰值 **9.10**、围堵逃跑 **9.05** vs 躲避 3.71（G/H/I 全过）
+  - `bench`：ellipse/帧 **1647.0**、gradient 19.0、lineTo 87.0、drawImage 53.0、arc 8.3、canvas 20
+  - 换种子校验（`KOI_SEED` = 1 / 777 / 20260902 / 999983）：jointdiag p99 19.6~21.7°、max 恒 24.0°、折角恒 0 全部通过 → CPG 的改善是真实的，不是某个随机序列的巧合
+- **已知 flaky 余量（未修，留待观察）**：`finshape` 的 A/B 断言用「异常率 <10%」的容忍阈值，而换种子实测 [B] 最高到 **8%**（`KOI_SEED=999983`）、[A] 最高 4%（`KOI_SEED=1`），离阈值仅剩 2 个百分点。默认种子下均为 0%，暂不阻塞；若后续几何改动导致异常率抬升，应先确认是测量边界（小鱼/极端姿态下贴图方向反解）还是真实几何问题，再考虑动阈值
+- 顺带修正 `bench` / `fishshape` / `sizeprofile` 头部用法注释仍指向 `node .tmp/xxx.mjs` 的过期路径（易引导去跑 `.tmp/` 下的过时副本）
+
 ## [0.1.0] - 2026-08-28
 
 首个公开版本。

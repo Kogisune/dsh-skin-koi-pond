@@ -2,13 +2,26 @@
 /**
  * koi-pond · bench — 用 Canvas 2D mock 驱动 lib/client.js 真实产物，
  * 统计每帧的绘制调用次数（不依赖浏览器，纯 Node）。
- * 用法：node .tmp/bench.mjs <client.js 路径> <标签>
+ * 用法：node scripts/bench.mjs <client.js 路径> [标签]
+ * 环境变量：KOI_DARK=1 切暗色主题、KOI_SEED=随机种子(默认20260902)。
+ *   固定种子前 ellipse/帧 在 1647~1759 间漂移（±7%，鱼数/体型随机所致），
+ *   跨次性能对比不可靠；固定后同一产物每次数值一致。
  */
 import { readFileSync } from 'node:fs'
 import vm from 'node:vm'
 
 const target = process.argv[2]
 const label = process.argv[3] || target
+
+// ---- 可复现随机：LCG 种子替换沙箱 Math.random，同一产物每次结果完全一致 ----
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
+function lcg() {
+  seed = (seed * 1664525 + 1013904223) >>> 0
+  return seed / 4294967296
+}
+const sandboxMath = Object.create(Math)
+sandboxMath.random = lcg
 
 const S = { ellipse: 0, drawImage: 0, lineTo: 0, arc: 0, fill: 0, stroke: 0, gradient: 0, canvases: 0, fills: new Set() }
 const reset = () => {
@@ -68,7 +81,7 @@ if (process.env.KOI_DARK) body.setAttribute('data-ds-dark-theme', '')
 let rafQ = []
 const sandbox = {
   console,
-  Math,
+  Math: sandboxMath,
   Date,
   document: {
     body,

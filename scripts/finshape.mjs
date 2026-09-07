@@ -11,18 +11,32 @@
  *      （按弧度/段的多波蛇游翻转 ≥ 2，必 FAIL）
  * 另导出 .tmp/koi-finshape.svg 帧快照（最大鱼几何）供人工核对。
  * 用法：node scripts/finshape.mjs <client.js 路径> [标签]
+ * 环境变量：KOI_SEED=随机种子(默认20260902，与 stateprobe 同种子体系)。
+ *   （未固定种子时 [B] 尾鳍朝尾 min 在 +0.92 ~ −0.20 间漂移、朝前异常 0%~5%，
+ *     [D] 翻转分布与 [A] 异常率亦随每次运行变化，断言存在 flaky 风险。）
  *
  * 鳍识别说明：胸鳍/尾鳍现在是离屏贴图（drawImage），不再是半透明 ellipse fill；
  * 贴图画布带 _kind/_rootX/_rootY 元数据（koiRender.newFinCanvas），录制器据此
  * 从 drawImage 事件 + 当时的 CTM 反解「锚点 / 方向 / 贴图矩形」。
  */
-import { readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import vm from 'node:vm'
 
 const target = process.argv[2]
 const label = process.argv[3] || target
 const OUT_SVG = fileURLToPath(new URL('../.tmp/koi-finshape.svg', import.meta.url))
+
+// ---- 可复现随机：LCG 种子替换沙箱 Math.random，同一产物每次结果完全一致 ----
+// KOI_SEED 可换种子复跑，用于确认结论不是某个特定随机序列的巧合。
+let seed = Number(process.env.KOI_SEED || 20260902) >>> 0
+function lcg() {
+  seed = (seed * 1664525 + 1013904223) >>> 0
+  return seed / 4294967296
+}
+const sandboxMath = Object.create(Math)
+sandboxMath.random = lcg
 
 // ---- DOM / ctx mock（记录绘制结算几何，CTM 追踪） ----
 const listeners = Object.create(null)
@@ -209,7 +223,7 @@ const bodyEl = makeEl('body')
 let rafQ = []
 const sandbox = {
   console,
-  Math,
+  Math: sandboxMath,
   Date,
   document: {
     body: bodyEl,
@@ -537,6 +551,8 @@ if (stats.best) {
     els.join('') +
     `</svg>`
   try {
+    // 输出目录 .tmp/ 被 gitignore，全新 clone 下不存在 —— 自动创建，否则静默丢快照
+    mkdirSync(dirname(OUT_SVG), { recursive: true })
     writeFileSync(OUT_SVG, svg)
     console.log(`SVG 帧快照 → ${OUT_SVG}`)
   } catch (e) {
