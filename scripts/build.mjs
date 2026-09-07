@@ -50,6 +50,7 @@ const KOI_MODULES = [
   'koiRipple.js',
   'koiRender.js',
   'koiFish.js',
+  'koiDebug.js', // TEST-SPECIMEN：临时调试模块（?koitest/?koidebug），发布前随调试层一起删除
   'koiPond.js',
 ]
 

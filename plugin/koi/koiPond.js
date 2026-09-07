@@ -36,6 +36,12 @@ let ripples = []
 // 供 cleanup 判断 window.__koiSetScheme 是否仍为本实例的
 let setSchemeRef = null
 
+// ==================== 临时测试单元（TEST-SPECIMEN）====================
+// 调试层的全部实现（开关 TEST_SPECIMEN / DEBUG_ALL、钉点鱼详情层、全鱼调试层）
+// 在独立模块 koiDebug.js —— 发布/提交前删除该文件 + 本文件标「TEST-SPECIMEN」
+// 的 4 处分支（frame 平移分支、mount 创建分支、resize 跟随分支、frame 末尾调试
+// 调用）+ build.mjs KOI_MODULES 里的 koiDebug.js 条目。
+
 // ---- 主循环（透明背景，让主题池水渐变透出） ----
 function frame() {
   if (!ctx) return
@@ -72,7 +78,25 @@ function frame() {
         continue
       }
     }
-    edges(k)
+    if (k.testPin) {
+      // TEST-SPECIMEN：钉点鱼不参与边界处理（永不该触边）；每帧把鱼整体平移回钉点。
+      // pos/trail/body 三者必须一起平移 —— 只动 pos 会让骨骼轨迹与渲染脱节，
+      // 轨迹形状保留 = 保留「它刚才试图怎么游」的弯曲，呈现原地游泳观感。
+      const tdx = k.testPin.x - k.pos.x
+      const tdy = k.testPin.y - k.pos.y
+      k.pos.x += tdx
+      k.pos.y += tdy
+      for (let t = 0; t < k.trail.length; t++) {
+        k.trail[t].x += tdx
+        k.trail[t].y += tdy
+      }
+      for (let b = 0; b < k.body.length; b++) {
+        k.body[b].x += tdx
+        k.body[b].y += tdy
+      }
+    } else {
+      edges(k)
+    }
     updateKoi(k)
     // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
     drawTail(k)
@@ -98,6 +122,10 @@ function frame() {
   // 荷叶面画在最上层，鱼从叶下游过时被遮住
   for (let ld = 0; ld < decoLeaves.length; ld++) drawLeafCache(ctx, decoLeaves[ld], 'cacheSurface')
   for (let l = 0; l < leaves.length; l++) drawLeafCache(ctx, leaves[l], 'cacheSurface')
+
+  // TEST-SPECIMEN：调试层最后画（koiDebug.js，保证不被荷叶/鱼遮挡）（发布前删除）
+  if (specimenRef && specimenRef.active) drawSpecimenDebug(specimenRef)
+  drawFishDebugAll()
 }
 
 const reduced =
@@ -190,6 +218,16 @@ function mount(host, opts = {}) {
   flock = []
   for (let i = 0; i < koiCount; i++) flock.push(makeKoi(i))
 
+  // TEST-SPECIMEN：追加一条钉点测试鱼（发布/提交前删除，见文件顶部说明块）。
+  // 位置：水平居中、top 200px；bornFrame=1 让它随首波鱼一起立即出现。
+  if (TEST_SPECIMEN) {
+    const tf = makeKoi(flock.length)
+    tf.testPin = { x: W / 2, y: 200 }
+    tf.bornFrame = 1
+    flock.push(tf)
+    specimenRef = tf // TEST-SPECIMEN：供 frame 末尾画调试层
+  }
+
   function onPointerMove(e) {
     const nx = e.clientX
     const ny = e.clientY
@@ -236,6 +274,12 @@ function mount(host, opts = {}) {
     canvas.style.height = H + 'px'
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     placeLeaves()
+    // TEST-SPECIMEN：钉点的 x 跟随窗口水平居中（y 恒为 200）（发布前删除）
+    if (TEST_SPECIMEN) {
+      for (let i = 0; i < flock.length; i++) {
+        if (flock[i].testPin) flock[i].testPin.x = W / 2
+      }
+    }
     if (dpr !== prevDpr) buildLeafCaches() // 位图分辨率跟随设备像素比
   }
   function onVis() {
@@ -313,6 +357,7 @@ function mount(host, opts = {}) {
     leaves = []
     decoLeaves = []
     ripples = []
+    specimenRef = null // TEST-SPECIMEN：钉点鱼引用一并清空（发布前删除）
     shadowCanvas = null
     shadowCtx = null
     started = false
