@@ -5,6 +5,7 @@
  *    KOI_MODULES 里的本模块条目）。
  *
  * 开关（URL query，可同时开）：
+ *   ?koione   —— 只留钉点鱼一条（配 ?koitest）：姿态特写
  *   ?koitest  —— 钉点测试鱼：位置固定在「水平居中、top 200px」，其余行为
  *                （AI/状态机/骨骼/摆尾）完全不受约束；钉定方式是每帧整体平移回
  *                钉点（pos+trail+body 同步，保留路径弯曲形状 → 原地游泳观感），
@@ -24,6 +25,10 @@ const TEST_SPECIMEN =
   typeof location !== 'undefined' && /(?:^|[?&])koitest/.test(location.search || '')
 const DEBUG_ALL =
   typeof location !== 'undefined' && /(?:^|[?&])koidebug/.test(location.search || '')
+// ?koione —— 只留钉点鱼一条（配 ?koitest）：特写看姿态用。杂乱画面里几条鱼
+// 叠在一起时，根本判断不出「这条鱼的形状对不对」。
+const ONLY_SPECIMEN =
+  typeof location !== 'undefined' && /(?:^|[?&])koione/.test(location.search || '')
 
 // 钉点鱼引用（mount 时赋值、cleanup 时置空；frame 末尾画详情层用）
 let specimenRef = null

@@ -98,11 +98,14 @@ function frame() {
       edges(k)
     }
     updateKoi(k)
-    // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
+    // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 →
+    // 暗部反光 → 轮廓压边 → 背脊线
     drawTail(k)
     drawPectoralTail(k)
     drawBody(k)
+    drawBodyPatches(k)
     drawBodyLight(k)
+    drawBodyRim(k)
     drawBackLine(k)
   }
 
@@ -217,6 +220,9 @@ function mount(host, opts = {}) {
   const koiCount = Math.max(4, cfg.koi + scheme.mods.number)
   flock = []
   for (let i = 0; i < koiCount; i++) flock.push(makeKoi(i))
+  // 绘制顺序 = 深度顺序（深的先画）。depth 是每条鱼出生时定死的常量，
+  // 所以排序只需在装配时做一次，不必每帧排。
+  flock.sort((a, b) => b.depth - a.depth)
 
   // TEST-SPECIMEN：追加一条钉点测试鱼（发布/提交前删除，见文件顶部说明块）。
   // 位置：水平居中、top 200px；bornFrame=1 让它随首波鱼一起立即出现。
@@ -226,6 +232,8 @@ function mount(host, opts = {}) {
     tf.bornFrame = 1
     flock.push(tf)
     specimenRef = tf // TEST-SPECIMEN：供 frame 末尾画调试层
+    // TEST-SPECIMEN：?koione 只留这一条，用于姿态特写
+    if (ONLY_SPECIMEN) flock = [tf]
   }
 
   function onPointerMove(e) {

@@ -69,6 +69,16 @@ function shade(hex, f) {
   const to2 = (n) => Math.min(255, Math.round(n * f)).toString(16).padStart(2, '0')
   return '#' + to2(parseInt(full.substring(0, 2), 16)) + to2(parseInt(full.substring(2, 4), 16)) + to2(parseInt(full.substring(4, 6), 16))
 }
+// 两个 hex 按 t 线性混合，返回 hex（身体主色 → 尾腹色的沿体渐变用）
+function mixHex(a, b, t) {
+  const pa = a.replace('#', '')
+  const pb = b.replace('#', '')
+  const fa = pa.length === 3 ? pa.split('').map((c) => c + c).join('') : pa
+  const fb = pb.length === 3 ? pb.split('').map((c) => c + c).join('') : pb
+  const to2 = (n) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0')
+  const ch = (i) => lerp(parseInt(fa.substring(i, i + 2), 16), parseInt(fb.substring(i, i + 2), 16), t)
+  return '#' + to2(ch(0)) + to2(ch(2)) + to2(ch(4))
+}
 
 // Perlin noise（荷叶边缘）
 const perm = new Uint8Array(512)
