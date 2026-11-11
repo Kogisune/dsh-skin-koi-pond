@@ -111,7 +111,10 @@ function makeCtx(owner) {
       const m = M()
       const wx = m[0] * x + m[2] * y + m[4]
       const wy = m[1] * x + m[3] * y + m[5]
-      pts.push({ x: wx, y: wy, a: alphaOf(c.fillStyle) * c.globalAlpha })
+      // grad：身体层是 ellLit 的方向渐变（fillStyle 为 CanvasGradient 对象），
+      // 尾腹色底衬是 rgba 字符串。用「填充类型」切层比用 alpha 方向稳：
+      // alpha 方向依赖各层的取值区间，渲染层一旦调整透明度就会把两条鱼粘成一段。
+      pts.push({ x: wx, y: wy, a: alphaOf(c.fillStyle) * c.globalAlpha, grad: typeof c.fillStyle === 'object' })
     },
     fillStyle: '',
     _stack: [],
@@ -232,19 +235,14 @@ function tick() {
 function splitLayers() {
   const runs = []
   let cur = []
-  let prevDir = 0
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i]
     if (cur.length) {
-      const d = p.a - cur[cur.length - 1].a
-      const dir = Math.abs(d) < 1e-6 ? prevDir : Math.sign(d)
-      if (dir !== prevDir) {
+      // 切层依据：填充类型变化（渐变=身体层 / rgba=尾腹衬层）。
+      if (p.grad !== cur[cur.length - 1].grad) {
         runs.push(cur)
         cur = []
       }
-      prevDir = dir
-    } else {
-      prevDir = 0
     }
     cur.push(p)
   }
@@ -252,7 +250,7 @@ function splitLayers() {
   return runs.filter((r) => r.length > 4)
 }
 
-// 单帧内 >GLITCH 的点距只可能是「环绕瞬移把身体拉断」，单独计数
+// 切层后，单帧内 >GLITCH 的点距只可能是「环绕瞬移把身体拉断」，单独计数
 const GLITCH = 100
 function layerStats(r) {
   const d = []
@@ -274,9 +272,9 @@ function layerStats(r) {
   }
 }
 
-// 递减段 = 身体层（尾鳍层是递增段，直接丢弃）
+// 渐变填充段 = 身体层（rgba 段是尾腹衬层，直接丢弃）
 function bodyLayer(r) {
-  return r[0].a > r[r.length - 1].a ? r : null
+  return r[0].grad ? r : null
 }
 
 function analyse() {
