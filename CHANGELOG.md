@@ -4,6 +4,16 @@
 
 ## [未发布]
 
+### S0 冻结（2026-11-12 · Plan A 第一步：回滚观感改动，建立干净基线）
+
+- **分支决策**：按 `docs/swim-realism-postmortem.md` §5/§6 在 `cpg-refactor` 上**线性推进**，不开长期新分支（`master` 仍是 v0.1.0，远端无并行开发线；新分支的隔离收益低于符号链接观察回路 + 入库 `lib/` 的切换成本）。在 `cea3d76` 打轻量锚点 tag **`baseline/pre-fix`**（本地，未推送）；回滚采用**反向 patch 语义**（文件恢复到 `c9cc80e^` 后补回真修复），**不改写已推送历史**。S0 单独一个提交，S1 时间基另起提交。
+- **回滚范围**（4 个文件恢复到 `c9cc80e^`）：`koiRender.js`（kohaku 斑带/轮廓压边/depth 压暗/鳍色与尾鳍相位/背脊线取色）、`koiSkeleton.js`（`BODY_PROFILE` 5.2:1 → 6.5:1、`WAVE_TILT_AMP` 0.30 → 0.156 rad）、`koiFish.js`（`k.depth` / `k.patch`）、`koiPond.js`（深度排序、`drawBodyPatches` / `drawBodyRim` 调用）。**`WAVE_TILT_AMP` 一并回滚**，因为它属于 11-11 观感包的一部分；S3 建立指标体系后再按秒重新标定幅值，不在 S0 里夹带运动学改动。
+- **必须保留（逐项核对）**：① `FIN_ASSETS` 占位符去引号（真 bug：鳍从上线起从未渲染，探针覆盖不到）；② `scripts/shot.mjs`（`e908257`，未动）；③ `fishshape` 按 grad 切层（主路径保留，见下条兼容修复）；④ `ONLY_SPECIMEN` / `?koione`（`koiDebug.js` 常量 + `koiPond.js` 一行，S0 A/B 截图依赖）；⑤ `koiMath.mixHex` 作工具保留；⑥ 11-11 复审结论与本报告历史条目**原样留档**，不回写。
+- **探针兼容修复（`fishshape`）**：回滚后首次 `npm test` 报 `[M] 拉断帧=1308`。根因是旧渲染层 `drawTail` 与 `drawBody` **都用 `ellLit` 渐变**，而 `e908257` 把 `fishshape` 改成按 `fillStyle` 类型切层（假定尾腹底衬是 rgba 纯色）→ 两层连成 2n 点的一段，衔接处 >100px 被判为拉断。修法是**保持渲染层纯净回滚**，给 `splitLayers()` / `bodyLayer()` 加 `alphaMode` 兼容分支：全帧同为渐变时退回 `e908257` 之前的 `globalAlpha` 方向切层（尾腹层递增 0.35→0.75、主色层递减 0.9→0.3，取递减段），grad 切层仍是新版渲染层的主路径。另 4 个探针本就按 alpha 方向切层，未改动。
+- **回归实测**（种子 20260902，`npm test` 6/6 全绿）：`fishshape` J 体长漂移 1.00× / K 段距漂移 1.00× / L `p95−min=0.00px` / **M 拉断帧 1308 → 0、NaN=0**；段距中位 2.87、体长中位 115.00（躲闪 132.25）、点数 41；`bench` **lineTo/帧 2215 → 87.0**（回到观感改动前）、fill 1707 → 1647、ellipse 1647、drawImage 53.0、gradient 19.0。**口径说明**：`fishshape` 在 S0 走的是 alphaMode 分支，与 `c9cc80e` 的 grad 切层路径取样本方式不同，数字已按当前状态重录；J/K/L/M 结论一致但**不视为同判据下的历史延续**。
+- **A/B 截图归档**（`.tmp/` 不入库，参数完全一致：`900×600`、`frames=200`、`seed=7`、`scheme=kohaku`、`?koitest`；单鱼版另加 `&koione --noleaf`）：`.tmp/s0-before-full.png` / `.tmp/s0-before-one.png`（`cea3d76`，高饱和红白硬边横条）vs `.tmp/s0-after-full.png` / `.tmp/s0-after-one.png`（S0，低对比半透明 + 可见尾鳍/胸鳍，确认鳍占位符修复未丢）。**S0 验收待用户目测确认基线**；确认前不动 S1。需长期留档请把 4 张图复制到 `docs/` 并在本节登记。
+- **恢复方式**：`git checkout baseline/pre-fix -- <files>` 可完整回到回滚前状态；tag 未推送，如需远端对照再单独推送。
+
 ### 🐛 修复
 - **鳍素材从上线起就没真正生效过（data URL 首尾多一对引号 → 解码必失败）**：`koiRender` 的 `FIN_ASSETS` 占位符写成了带引号的 `'__FIN_PEC_SVG__'`，而 build 用 `JSON.stringify(svgText)` 替换（自带 `"`）→ 运行时字符串变成 `"<svg …>"`，XML 非法 → `img.onerror` → 画布为空。`onerror` 同样置 `_baked = true`，`getFinSprite` 认为"已就绪"，于是每帧都在画一张全透明贴图。**Node 回归沙箱没有 `Image`，走的是"占位画布直接 `_baked=true`"分支，永远碰不到这条路径** —— 6 个探针全绿也发现不了。修复：占位符去掉引号；诊断证据 `pec ONLOAD 100x56 px=2092 / tail ONLOAD 120x100 px=4374`（修复前同为 `ONERROR`）。教训：`_baked` 这类"就绪"标志必须能区分成功/失败，`onerror` 不能与 `onload` 共用同一状态位
 - **轮廓描边把尾柄末端封成"管口"**：`drawBodyRim` 原先 `closePath()` 把右缘末端与左缘末端连起来，等于在尾柄末端横切一条深色半环（9× 特写里身体像被切断、尾鳍悬空）。改为左右两条**独立开放**子路径，吻端也不跨接

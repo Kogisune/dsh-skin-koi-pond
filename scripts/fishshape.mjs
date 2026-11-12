@@ -230,19 +230,37 @@ function tick() {
 }
 
 // ---- 几何反解 ----
-// frame() 绘制顺序 drawTail → drawBody：尾鳍层 alpha 递增（0.35→0.75）、
-// 身体层 alpha 递减（0.9→0.3）。按 alpha 方向翻转切段，只保留递减段 = 身体层。
+// 两套渲染层的切层判据（S0 回滚观感改动后必须都支持）：
+//   · c9cc80e 版：尾腹底衬是 rgba 纯色、主色层是 ellLit 渐变 → 按填充类型切最稳
+//     （alpha 方向依赖各层取值区间，渲染层一调透明度就会把两条鱼粘成一段）。
+//   · c9cc80e^ 旧版（S0 回滚后的状态）：drawTail 与 drawBody **都用 ellLit 渐变**，
+//     按填充类型切不出层，会连成 2n 点的一段，衔接处 >GLITCH 被误判为「拉断」。
+//     此时退回按 globalAlpha 方向翻转切段（e908257 之前的原始判据）：
+//     尾腹层递增 0.35→0.75、主色层递减 0.9→0.3，取递减段 = 身体层。
+let alphaMode = false
 function splitLayers() {
+  alphaMode = pts.length > 0 && pts.every((p) => p.grad)
   const runs = []
   let cur = []
+  let prevDir = 0
   for (let i = 0; i < pts.length; i++) {
     const p = pts[i]
     if (cur.length) {
-      // 切层依据：填充类型变化（渐变=身体层 / rgba=尾腹衬层）。
-      if (p.grad !== cur[cur.length - 1].grad) {
+      if (alphaMode) {
+        const d = p.a - cur[cur.length - 1].a
+        const dir = Math.abs(d) < 1e-6 ? prevDir : Math.sign(d)
+        if (dir !== prevDir) {
+          runs.push(cur)
+          cur = []
+        }
+        prevDir = dir
+      } else if (p.grad !== cur[cur.length - 1].grad) {
+        // 切层依据：填充类型变化（渐变=身体层 / rgba=尾腹衬层）。
         runs.push(cur)
         cur = []
       }
+    } else {
+      prevDir = 0
     }
     cur.push(p)
   }
@@ -272,9 +290,12 @@ function layerStats(r) {
   }
 }
 
-// 渐变填充段 = 身体层（rgba 段是尾腹衬层，直接丢弃）
+// 渐变填充段 = 身体层（rgba 段是尾腹衬层，直接丢弃）；
+// alphaMode（旧渲染层，两层同为渐变）下改取 globalAlpha 递减段。
 function bodyLayer(r) {
-  return r[0].grad ? r : null
+  return alphaMode
+    ? (r[0].a > r[r.length - 1].a ? r : null)
+    : (r[0].grad ? r : null)
 }
 
 function analyse() {
