@@ -3,3 +3,8 @@
 # 若允许 git 对 lib/ 做 text 转换，即便产物字节与 HEAD 完全一致，每次 build 后 git status 仍会
 # 把 lib/ 标成已修改（幻影 diff），污染 review。标 -text 后按字节比较，build 即幂等。
 lib/* -text
+
+# 二进制视觉基线（docs/swim-baseline/*.png）：显式声明不是文本。
+# PNG 含 NUL 字节，git 默认也会判为 binary；此处显式声明是为了防止将来有人加
+# `* text=auto` 后，本机 autocrlf=true 对图片做行尾转换、产生幻影 diff。
+*.png -text
