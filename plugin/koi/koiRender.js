@@ -195,7 +195,7 @@ function drawFinImage(sprite, x, y, ang, len, alpha01) {
 }
 
 // 胸鳍 + 尾鳍：画在身体层之下，根部被主色盖住，只露出伸出体外的部分。
-// 锚点与动效相位全部来自骨骼（sk.bind.pec / sk.bind.tail / sk.flap）。
+// 锚点与动效相位全部来自骨骼（sk.bind.pec / sk.bind.tail / sk.flap / sk.spread）。
 function drawPectoralTail(k) {
   const sk = k.sk
   if (k.body.length < 8) return
@@ -213,7 +213,8 @@ function drawPectoralTail(k) {
     }
   }
   // 尾鳍：尾端分叉大叶。锚点沿头向反推少许埋入尾柄（根部被主色盖住），
-  // 素材 +x 与尾向对齐；张合/摆动由身体行波自然带动。
+  // 素材 +x 与尾向对齐。A1：叠加 sk.spread —— 与尾端体波同频、再滞后约 11% 周期的
+  // 独立 power stroke（此前 spread 算了但从未被读取，尾鳍只能被动跟着尾柄切线）。
   const tailSpr = getFinSprite('tail', k.color2)
   if (tailSpr) {
     const tailLen = k.baseSize * 0.95
@@ -221,7 +222,7 @@ function drawPectoralTail(k) {
       tailSpr,
       tail.x + tail.dx * tailLen * 0.16,
       tail.y + tail.dy * tailLen * 0.16,
-      Math.atan2(tail.dy, tail.dx) + Math.PI,
+      Math.atan2(tail.dy, tail.dx) + Math.PI + sk.spread,
       tailLen,
       0.55
     )
