@@ -13,15 +13,26 @@
  *      让 Chrome 等一拍再拍 —— 两者缺一都会截到空白。
  *   3. #koi-pond-dsh 是 z-index:-1，会把画布压到页面背景之下。drain 完把画布
  *      drawImage 到一块 z-index:9999 的克隆画布上，截图才看得见。
+ *   4. 驱赶注入（--mouse-at）模式下同参数两次截图的 IDAT 可能不同（鳍素材
+ *      异步 bake / 涟漪时机）；title 里的 frame 与触发坐标是稳定的。该模式只用于
+ *      **形态目视**，不要用 SHA256 做逐像素 A/B；确定性数值对照一律走 Node 沙箱
+ *      探针（scripts/escapediag.mjs，固定 LCG 种子）。
  *
  * 用法：
  *   node scripts/shot.mjs --w=700 --h=450 --frames=200 --q=koitest --out=.tmp/pose.png
  *   node scripts/shot.mjs --q=koitest --zoom=3 --cx=0.5 --cy=0.5 --out=.tmp/close.png
+ *   # 驱赶连拍：在第 N 个模拟帧注入鼠标，用不同 --frames 出触发后各时刻
+ *   node scripts/shot.mjs --q=koitest\&koione --noleaf --mouse-at=178 --mouse=avoid \
+ *        --frames=186 --zoom=2 --out=.tmp/esc-186.png
+ *
+ * --mouse-at>0 时改用 .tmp/shot-client.js（内存插桩副本，不改 lib/），
+ * 默认 0 时脚本 src 与行为完全不变（历史 A/B 截图逐像素可比）。
+ * 注入模式会跳过末尾额外 drain(FRAMES/3)，使最终帧号 ≈ --frames，便于精确连拍。
  *
  * 前提：先 npm run build。
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -41,6 +52,8 @@ const QUERY = arg('q', '')
 const NOLEAF = process.argv.includes('--noleaf')
 const SCHEME = arg('scheme', 'kohaku')
 const SEED = Number(arg('seed', 7))
+const MOUSE_AT = Number(arg('mouse-at', 0)) // 0 = 不注入（默认，保持历史行为）
+const MOUSE_MODE = arg('mouse', 'avoid') // avoid | click
 const OUT = resolve(ROOT, arg('out', '.tmp/shot.png'))
 
 if (!existsSync(join(ROOT, 'lib', 'client.js'))) {
@@ -54,6 +67,22 @@ const chrome = [
 if (!chrome) {
   console.error('未找到 Chrome / Edge')
   process.exit(1)
+}
+
+// ---- 驱赶注入：生成插桩副本（只在 MOUSE_AT>0 时）----
+// 两处插桩都只作用于 .tmp 副本：①frame 末尾导出 flock/frameCount 供页面选目标鱼；
+// ②frame 开头刷新 mouse.last，避免 Chrome 虚拟时间把指针判为「超时消失」。
+let clientSrc = '../lib/client.js'
+if (MOUSE_AT > 0) {
+  let s = readFileSync(join(ROOT, 'lib', 'client.js'), 'utf8')
+  const A = 'function frame(render = true) {\n  if (!ctx) return\n  frameCount++'
+  const B = '  if (specimenRef && specimenRef.active) drawSpecimenDebug(specimenRef)\n  drawFishDebugAll()\n}'
+  if (!s.includes(A) || !s.includes(B)) throw new Error('shot.mjs 驱赶插桩锚点失效（产物结构变了）')
+  s = s.replace(A, 'function frame(render = true) {\n  if (!ctx) return\n  frameCount++\n  if (window.__shotHoldMouse) mouse.last = Date.now()')
+  s = s.replace(B, '  if (specimenRef && specimenRef.active) drawSpecimenDebug(specimenRef)\n  drawFishDebugAll()\n  window.__shotDiag = { flock, frameCount }\n}')
+  mkdirSync(join(ROOT, '.tmp'), { recursive: true })
+  writeFileSync(join(ROOT, '.tmp', 'shot-client.js'), s)
+  clientSrc = '../.tmp/shot-client.js'
 }
 
 const html = `<!doctype html><html><head><meta charset="utf-8">
@@ -77,7 +106,7 @@ CanvasRenderingContext2D.prototype.drawImage = function (src) {
 }` : ''}
 window.__ModuleLoader__ = { load: function (s) { window.__m = s.factory(function () {}) } };
 </script>
-<script src="../lib/client.js"></script>
+<script src="${clientSrc}"></script>
 <script type="module">
 // 用「module + 顶层 await」把整段流程挂在 load 之前：
 //   · 鳍素材是 data:SVG 异步解码（img.onload → getImageData → 染色）。同步 drain
@@ -88,6 +117,29 @@ window.__ModuleLoader__ = { load: function (s) { window.__m = s.factory(function
 function drain(n) {
   for (let i = 0; i < n * 2 + 10; i++) {
     ts += 16.7
+    if (${MOUSE_AT} > 0 && !window.__mouseFired && window.__shotDiag && window.__shotDiag.frameCount >= ${MOUSE_AT}) {
+      window.__mouseFired = true
+      window.__shotHoldMouse = true
+      const flock = window.__shotDiag.flock || []
+      const cand = flock
+        .filter((k) => k && k.active && k.fs && k.fs.name === 'normal' && Math.hypot(k.vel.x, k.vel.y) > 1.2)
+        .map((k) => ({ k, d: Math.hypot(k.pos.x - innerWidth / 2, k.pos.y - innerHeight / 2) }))
+        .sort((a, b) => a.d - b.d)
+      const k = cand[0] && cand[0].k
+      if (k) {
+        const pe = (type, x, y) => window.dispatchEvent(new MouseEvent(type, { clientX: x, clientY: y }))
+        window.__shotTarget = { x: k.pos.x, y: k.pos.y, fi: flock.indexOf(k) }
+        if (${JSON.stringify(MOUSE_MODE)} === 'click') {
+          pe('pointermove', k.pos.x + 10, k.pos.y + 10)
+          pe('pointerdown', k.pos.x + 10, k.pos.y + 10)
+          pe('pointerup', k.pos.x + 10, k.pos.y + 10)
+        } else {
+          pe('pointermove', k.pos.x - 160, k.pos.y - 120)
+          const h = Math.atan2(k.vel.y, k.vel.x)
+          pe('pointermove', k.pos.x + Math.cos(h) * 35, k.pos.y + Math.sin(h) * 35)
+        }
+      }
+    }
     const b = __q; __q = []
     for (let j = 0; j < b.length; j++) b[j](ts)
   }
@@ -97,7 +149,7 @@ try {
   window.__m.apply()
   drain(${FRAMES})
   await new Promise((r) => setTimeout(r, 80))
-  drain(Math.round(${FRAMES} / 3))
+  if (${MOUSE_AT} === 0) drain(Math.round(${FRAMES} / 3))
   const cv = document.querySelector('#koi-pond-dsh canvas')
   window.__skipLeaf = false
   const out = document.createElement('canvas')
@@ -117,7 +169,7 @@ try {
   }
   out.style.cssText = 'position:fixed;left:0;top:0;z-index:9999;width:100vw;height:auto'
   document.body.appendChild(out)
-  document.title = 'cv ' + cv.width + 'x' + cv.height
+  document.title = 'cv ' + cv.width + 'x' + cv.height + (window.__shotTarget ? ' | mouse@' + ${MOUSE_AT} + ' fi=' + window.__shotTarget.fi + ' fired=' + !!window.__mouseFired + ' frame=' + (window.__shotDiag ? window.__shotDiag.frameCount : -1) + ' tgt=' + Math.round(window.__shotTarget.x) + ',' + Math.round(window.__shotTarget.y) : '')
 } catch (e) { document.title = 'ERR ' + e.message }
 </script>
 </body></html>`
@@ -152,4 +204,4 @@ try {
     process.exitCode = 1
   }
 }
-console.log(`${OUT}  (${W}x${H} @${SCALE}x, ${FRAMES} 帧${ZOOM ? `, 放大 ${ZOOM}×` : ''})`)
+console.log(`${OUT}  (${W}x${H} @${SCALE}x, ${FRAMES} 帧${ZOOM ? `, 放大 ${ZOOM}×` : ''}${MOUSE_AT ? `, 鼠标注入 @${MOUSE_AT} (${MOUSE_MODE})` : ''})`)

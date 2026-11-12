@@ -226,11 +226,26 @@ const WAVE_TILT_AMP = 0.36
 // 且频率是体波的 0.5×；胸鳍 flap 又是 0.8× —— 各部位各摆各的，没有统一相位链。
 const TAIL_FIN_LAG = 0.7 // rad ≈ 3 帧 @0.22rad/帧
 const TAIL_FIN_AMP = 0.16 // rad ≈ ±9°（随 beat/panic 调制）
+
+// ---- A3-1：事件驱动的 C-start 弯曲脉冲（2026-11-12）----
+// 用户目测「鼠标驱赶时身体弯曲不自然 + 明显整体旋转」。escapediag.mjs 实测：
+// 旧 bend 链 drive=κ−prevκ 在稳态转弯恒 ≈0，逃跑时单关节脉冲仅 2.9~7.5°、cap 饱和
+// 0~17%；身体的大弯曲全来自 trail 路径 + 被 panic 放大 1.9~2.3× 的正弦行波，画面是
+// 「问号/钩形」而非 C 形，且弯曲**滞后航向 100~233ms**（真实鱼先弯后转）。
+// 这里改为：状态边沿 NORMAL→AVOID/ESCAPE 时注入一次主动 C-bend，1 帧到位、维持、
+// 回弹并带反向过冲（Stage 2 甩尾），之后交回常规行波。脉冲独立叠加到 spine 绝对朝向，
+// **不写进 rel**（rel 保持纯跟随状态，不累积、不需撤销、不影响无鼠标的常态场景）。
+// 外部基准：Eaton et al. 1988 / PMID 3411353，金鱼 C-start Stage1 15–40ms 绕质心转
+// 30–100°、Stage2 轴向加速；30fps 单帧 33ms 表达不了渐变，只能「1 帧到位 + 数帧回弹」。
+const CSTART_TOTAL = 1.35 // rad ≈ 77° 头尾相对角峰值（真实 Stage1 区间 30~100°）
+const CSTART_ENV = [1, 1, 0.72, 0.35, -0.20, -0.42, -0.28, -0.12, 0] // 9 帧 ≈ 300ms
+const CSTART_WAVE_FLOOR = 0.18 // C-bend 期间行波幅值压到 18%，避免正弦波与 C 形叠加成钩形
 function spineTilt(t, ph0, k) {
-  // 幅值帽 1.35 → 2.2：躲避/逃跑爆发时 beat 冲到 2.0~2.5，旧帽把幅值贡献截断，
-  // 观感 =「尾巴甩得快但身体 S 形不够深」（实测躲避摆幅仅巡航 1.5×，真实鱼
-  // fast-start 为 2~4×）。帽只影响 beat>1.35 的爆发场景，巡航（beat≈1）完全不变。
-  const amp = WAVE_TILT_AMP * (0.45 + 0.55 * Math.min(2.2, k.beat || 1)) * (1 + 0.4 * (k.panic || 0))
+  // A3-1：panic/beat 对行波幅值的加成降档。旧值 beat 帽 2.2、panic +0.4，
+  // 逃跑时 amp 冲到 47.9°（2.32× 巡航）叠上 3.28× 摆频 = 30fps 时间走样。
+  // 常态 beat≈1 / panic=0 时三项完全不变（A1 的 9.9% 体长摆幅保持）。
+  const beatC = Math.min(1.6, k.beat || 1)
+  const amp = WAVE_TILT_AMP * (0.45 + 0.55 * beatC) * (1 + 0.15 * (k.panic || 0))
   return Math.sin(ph0 - t * WAVE_SPAN + k.jitter) * amp * t * t
 }
 
@@ -266,6 +281,18 @@ function makeSkeleton(k) {
   // 头段段数 = 头段节点数 - 1（头段内所有段同向 → 刚性棍）
   const headNodes = Math.max(2, Math.round(n * HEAD_FRAC))
   const headSegs = headNodes - 1
+  // A3-1：C-bend 的沿体权重（头段 0、向后按 u² 增大，Σ=1 → 总弯角 = CSTART_TOTAL）。
+  // 预分配成数组，运行时不 new 对象。
+  const cstartWeight = new Float32Array(m)
+  const cstartPulse = new Float32Array(m)
+  let wsum = 0
+  for (let i = 0; i < m; i++) {
+    if (i < headSegs) continue
+    const u = Math.max(0, (nodeTs[i + 1] - HEAD_FRAC) / (1 - HEAD_FRAC))
+    cstartWeight[i] = u * u
+    wsum += cstartWeight[i]
+  }
+  for (let i = 0; i < m; i++) cstartWeight[i] /= wsum || 1
   // 出生体态 = 沿初速方向的直线鱼（避免出生第一帧身体从 0 角甩到位）
   const a0 = Math.atan2(k.vel.y, k.vel.x)
   for (let i = 0; i < m; i++) spine[i] = a0
@@ -283,6 +310,11 @@ function makeSkeleton(k) {
     headSegs,
     bend,
     bendPrev,
+    cstartWeight,
+    cstartPulse,
+    cstartT: -1, // C-bend 包络帧计数（-1 = 未激活）
+    cstartSign: 1, // 弯曲侧：与转向侧相反（先弯后弹）
+    prevState: 'normal', // 状态边沿检测
     prevHeadR: a0, // 上一帧航向（算转向角速度用）
     prevKappa: 0, // 上一帧头端曲率（取变化量用）
   }
@@ -313,6 +345,51 @@ function updateSpine(k) {
   const nodeTs = sk.nodeTs
   const len = spineLenBuf
   const r = spineDirBuf
+  const m0 = Math.max(0, Math.min(m - 1, headSegs))
+
+  // ---- A3-1：C-start 脉冲状态推进（只在状态边沿触发，稳态转弯不重复注入）----
+  const st = k.fs ? k.fs.name : 'normal'
+  if ((st === 'avoid' || st === 'escape') && sk.prevState === 'normal') {
+    const vh0 = Math.atan2(k.vel.y, k.vel.x)
+    let dir = k.fs.avoidDir
+    if (!dir && k.fs.esc) {
+      const ex = k.fs.esc.x - k.pos.x
+      const ey = k.fs.esc.y - k.pos.y
+      const el = Math.hypot(ex, ey) || 1
+      dir = { x: ex / el, y: ey / el }
+    }
+    // 转向侧 = cross(vel, 逃离目标)；身体先向**反侧**弯成 C，回弹时顺势把头推出去。
+    let cross = dir ? Math.cos(vh0) * dir.y - Math.sin(vh0) * dir.x : 0
+    if (Math.abs(cross) < 0.05) cross = k.jitter >= 0 ? 1 : -1
+    sk.cstartSign = cross >= 0 ? -1 : 1
+    sk.cstartT = 0
+  }
+  sk.prevState = st
+  let cstartEnv = 0
+  let waveScale = 1
+  if (sk.cstartT >= 0) {
+    const t = sk.cstartT
+    if (t >= CSTART_ENV.length) sk.cstartT = -1
+    else {
+      cstartEnv = CSTART_ENV[t] * sk.cstartSign
+      // C-bend 期间压低行波：正弦波与单向 C 形叠加正是「问号/钩形」的来源
+      const suppress = 1 - t / (CSTART_ENV.length - 1)
+      waveScale = 1 - (1 - CSTART_WAVE_FLOOR) * suppress
+      sk.cstartT++
+    }
+  }
+  const pulse = sk.cstartPulse
+  pulse.fill(0)
+  if (cstartEnv !== 0) {
+    for (let i = m0; i < m; i++) {
+      let p = cstartEnv * CSTART_TOTAL * sk.cstartWeight[i]
+      const lim = caps[i] * 0.9
+      if (p > lim) p = lim
+      else if (p < -lim) p = -lim
+      pulse[i] = p
+    }
+  }
+
   // 1) 目标场：轨迹段方向 + 解析段长。
   //    - 段长用 nodeTs 差分 × 体长（恒定）：重采样边界误差不进入重建层，严格保长
   //    - 近零段（重采样重叠）方向继承上一段，不产生 atan2(0,0) 假折角目标
@@ -329,12 +406,11 @@ function updateSpine(k) {
   // 2) CPG 行波几何化：目标朝向 = 轨迹方向 + 倾斜场（相位沿弧长向后传播）。
   //    中线 = 低频转弯弯曲（轨迹曲率）+ 高频推进行波（tilt），同一套几何。
   const ph0 = k.swimPhase || frameCount
-  for (let i = 0; i < m; i++) r[i] += spineTilt(nodeTs[i], ph0, k)
+  for (let i = 0; i < m; i++) r[i] += spineTilt(nodeTs[i], ph0, k) * waveScale
   // 2.5) C 形弯曲波（CPG 弯曲链）：头端曲率变化 → 脉冲注入第一活动关节，
   //      再以固定关节数/帧沿链向尾传播（用 bendPrev 取值，保证是「传播」而非瞬时同步）。
   const bend = sk.bend
   const bendPrev = sk.bendPrev
-  const m0 = Math.max(0, Math.min(m - 1, headSegs))
   const vh = Math.atan2(k.vel.y, k.vel.x)
   const headOmega = angNorm(vh - sk.prevHeadR) // 航向角速度（rad/帧）
   const vl = Math.max(0.35, Math.hypot(k.vel.x, k.vel.y))
@@ -374,6 +450,16 @@ function updateSpine(k) {
     if (rel[i] > caps[i]) rel[i] = caps[i]
     else if (rel[i] < -caps[i]) rel[i] = -caps[i]
     spine[i] = spine[i - 1] + rel[i]
+  }
+  // 4.5) A3-1：把 C-bend 脉冲按关节增量累加进脊柱绝对朝向。
+  //      不写进 rel（rel 保持纯跟随状态，脉冲不累积、下帧不残留）；
+  //      body 由 spine 重建，所以渲染层自然看到这次主动弯曲。
+  if (cstartEnv !== 0) {
+    let acc = 0
+    for (let i = m0; i < m; i++) {
+      acc += pulse[i]
+      spine[i] += acc
+    }
   }
   // 5) 重建（保长）：body[0] = 路径头点，body[i+1] = body[i] + len[i]·dir(spine[i])
   let px = pts[0].x
