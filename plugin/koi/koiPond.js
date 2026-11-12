@@ -43,11 +43,13 @@ let setSchemeRef = null
 // 调用）+ build.mjs KOI_MODULES 里的 koiDebug.js 条目。
 
 // ---- 主循环（透明背景，让主题池水渐变透出） ----
-function frame() {
+// render=false 时只推进模拟、不绘制：一次 rAF 内补多个模拟步时，只有最后一步
+// 才真正画，避免「掉帧 → 补步 → 绘制开销翻倍 → 更掉帧」的死亡螺旋。
+function frame(render = true) {
   if (!ctx) return
   frameCount++
   updateLight()
-  ctx.clearRect(0, 0, W, H)
+  if (render) ctx.clearRect(0, 0, W, H)
 
   if (mouse.x > -999 && Date.now() - mouse.last > 1600) {
     mouse.x = -9999
@@ -55,7 +57,7 @@ function frame() {
   }
 
   // 阴影层：荷叶影 + 鱼影画进离屏层后放大贴回，一次性得到柔和投影
-  if (beginShadowLayer()) {
+  if (render && beginShadowLayer()) {
     for (let ld = 0; ld < decoLeaves.length; ld++) drawLeafCache(shadowCtx, decoLeaves[ld], 'cacheShadow')
     for (let l = 0; l < leaves.length; l++) drawLeafCache(shadowCtx, leaves[l], 'cacheShadow')
 
@@ -98,12 +100,14 @@ function frame() {
       edges(k)
     }
     updateKoi(k)
-    // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
-    drawTail(k)
-    drawPectoralTail(k)
-    drawBody(k)
-    drawBodyLight(k)
-    drawBackLine(k)
+    if (render) {
+      // 绘制顺序（全部读骨骼 k.sk）：尾腹色层 → 胸鳍/尾鳍(素材) → 主色层 → 暗部反光 → 背脊线
+      drawTail(k)
+      drawPectoralTail(k)
+      drawBody(k)
+      drawBodyLight(k)
+      drawBackLine(k)
+    }
   }
 
   if (frameCount % 30 === 0) ripples.push(makeRipple(rnd(0, W), rnd(0, H), false))
@@ -116,9 +120,10 @@ function frame() {
       ripples.splice(r, 1)
       continue
     }
-    drawRipple(rp)
+    if (render) drawRipple(rp)
   }
 
+  if (!render) return
   // 荷叶面画在最上层，鱼从叶下游过时被遮住
   for (let ld = 0; ld < decoLeaves.length; ld++) drawLeafCache(ctx, decoLeaves[ld], 'cacheSurface')
   for (let l = 0; l < leaves.length; l++) drawLeafCache(ctx, leaves[l], 'cacheSurface')
@@ -130,13 +135,42 @@ function frame() {
 
 const reduced =
   typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+// ---- 时间基（S1，2026-11-12）----
+// 旧实现 `if (ts - last < frameMin) return; last = ts` 有两个结构性缺陷：
+//   ① 迟到一帧就再丢一帧余量（`last = ts` 把余数丢掉），相位不累积 → 掉帧后鱼变慢；
+//   ② 所有运动都是「每帧常量」，丢掉的帧永远不补 → 时间单向丢失，越卡越慢。
+// 改为**固定步长 + 累加器 + 补步**（Gaffer《Fix Your Timestep》的简化版）：
+//   · 模拟步仍是 1/FPS 秒，每帧常量与 trail 采样密度不变 → 6 个探针基准仍可比；
+//   · 补步时只有最后一步绘制（frame(render=false)），不放大绘制开销；
+//   · 长时间挂起（切后台/断点）不追帧，避免死亡螺旋。
+// 注：**没有**把 FPS 提到 60 —— trail 是定长数组、按等弧长重采样，帧率翻倍会让
+// 每点间距减半、可覆盖弧长减半，resampleBody 会拿不到足够轨迹。提帧率必须同步
+// 重标定 trail 长度与全部每帧常量，属 S3 范畴，不在 S1 夹带。
+const MAX_CATCHUP = 3 // 单次 rAF 最多补 3 个模拟步
+const MAX_GAP_MS = 250 // 超过 250ms 视为挂起，重置基准不追帧
 let last = 0
+let acc = 0
 let frameMin = 1000 / 30
 function loop(ts) {
   rafId = requestAnimationFrame(loop)
-  if (ts - last < frameMin) return
-  last = ts
-  frame()
+  if (!last) { last = ts; return } // 首帧只对齐时间基准
+  const gap = ts - last
+  last = ts // 消费全部真实时间；余数留在 acc，不再丢弃
+  if (gap < 0) return
+  if (gap > MAX_GAP_MS) {
+    acc = 0
+    frame(true) // 挂起回来只画一帧，不追帧
+    return
+  }
+  acc += gap
+  let steps = 0
+  while (acc >= frameMin && steps < MAX_CATCHUP) {
+    acc -= frameMin
+    steps++
+  }
+  if (steps === MAX_CATCHUP) acc = 0 // 积压过多直接丢弃：宁可慢一拍，不雪崩
+  if (!steps) return
+  for (let i = 0; i < steps; i++) frame(i === steps - 1)
 }
 
 function placeLeaves() {
@@ -170,6 +204,8 @@ function mount(host, opts = {}) {
   const cfg = { koi: opts.koi ?? 12, fps: opts.fps ?? 30 }
   frameMin = 1000 / cfg.fps
   FPS = cfg.fps
+  last = 0 // 每次 mount 都从首帧重新对齐时间基准（cleanup→remount 不继承旧时间戳）
+  acc = 0
 
   dpr = Math.min(window.devicePixelRatio || 1, 2)
   W = window.innerWidth
@@ -291,6 +327,8 @@ function mount(host, opts = {}) {
         rafId = null
       }
     } else if (!reduced) {
+      last = 0 // 挂起期间时间不推进，恢复后重新对齐首帧
+      acc = 0
       rafId = requestAnimationFrame(loop)
     }
   }

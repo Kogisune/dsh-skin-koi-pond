@@ -6,7 +6,7 @@
  * 之所以需要这个入口：此前 `npm test` 只跑 `validate.mjs`（纯结构校验），
  * 行为/几何/鳍形/状态机四类断言全不在 CI 内，回归形同虚设。
  *
- * 流程：build（默认开启，保证测的是当前源码而非过期产物）→ 6 个断言探针 → 可选 bench。
+ * 流程：build（默认开启，保证测的是当前源码而非过期产物）→ 7 个断言探针 → 可选 bench。
  * 所有探针共用同一套 LCG 随机种子（默认 20260902，KOI_SEED 可覆盖），结果逐位可复现。
  *
  * 未纳入的脚本：
@@ -15,7 +15,7 @@
  *     固定种子后波动已消除，但机器阈值易在换机器/CI 上误报）
  *
  * 用法：
- *   npm test                     # build + 5 个断言探针
+ *   npm test                     # build + 7 个断言探针
  *   node scripts/test.mjs --no-build   # 跳过 build，直接测现有 lib/client.js
  *   node scripts/test.mjs --bench      # 额外跑 bench（只跑不判）
  *   node scripts/test.mjs --verbose    # 打印探针完整输出（调试用）
@@ -41,6 +41,7 @@ const PROBES = [
   ['finshape.mjs', [TARGET, 'finshape'], '鳍几何 胸鳍/尾鳍/背脊/单弧（A-D）'],
   ['stateprobe.mjs', [TARGET, 'stateprobe'], '状态机行为（G/H/I）'],
   ['turnprobe.mjs', [TARGET, 'turnprobe'], '掉头/螺旋（T1-T4：pivot/转弯半径/盘旋/净弯）'],
+  ['timestep.mjs', [TARGET, 'timestep'], '时间基 掉帧补步/相位不漂移（S）'],
 ]
 if (WITH_BENCH) PROBES.push(['bench.mjs', [TARGET, 'bench'], '性能统计（只跑不判）'])
 
